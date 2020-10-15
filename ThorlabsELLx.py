@@ -1,56 +1,62 @@
 import io
 import serial
 
-def elliptec_open(dev):
-    ser = serial.Serial(dev,
-                        9600,
-                        bytesize=serial.EIGHTBITS,
-                        parity=serial.PARITY_NONE,
-                        stopbits=serial.STOPBITS_ONE,
-                        timeout=1)
-    return ser
 
-def elliptec_buffer(ser):
-    sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser),
-                           newline='\r\n')
-    return sio
+class ThorlabsELLx:
+    def __init__(self):
+        pass
+        
 
-def bufmsg(sio, msg):
-    sio.write(msg)
-    sio.flush()
-    return sio.readline()
+    def elliptec_open(self,dev):
+        ser = serial.Serial(dev,
+                            9600,
+                            bytesize=serial.EIGHTBITS,
+                            parity=serial.PARITY_NONE,
+                            stopbits=serial.STOPBITS_ONE,
+                            timeout=1)
+        return ser
 
-def emsg(sio, addr, msg):
-    addr = str(int(addr, 16))
-    return bufmsg(sio, addr + msg)
+    def elliptec_buffer(self,ser):
+        sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser),
+                            newline='\r\n')
+        return sio
 
-def eident(sio, addr):
-    return emsg(sio, addr,'in')
+    def bufmsg(self,sio, msg):
+        sio.write(msg)
+        sio.flush()
+        return sio.readline()
 
-def emotorinfo(sio, addr):
-    i1 = emsg(sio, addr, 'i1')
-    i2 = emsg(sio, addr, 'i2')
-    return i1 + i2
+    def emsg(self,sio, addr, msg):
+        addr = str(int(addr, 16))
+        return self.bufmsg(sio, addr + msg)
 
-def ehomeoff(sio, addr):
-    return emsg(sio, addr, 'go')
+    def eident(self,sio, addr):
+        return self.emsg(sio, addr,'in')
 
-def ejogstep(sio, addr):
-    return emsg(sio, addr, 'gj')
+    def emotorinfo(self,sio, addr):
+        i1 = self.emsg(sio, addr, 'i1')
+        i2 = self.emsg(sio, addr, 'i2')
+        return i1 + i2
 
-def epos(sio, addr):
-    return emsg(sio, addr, 'gp')
+    def ehomeoff(self,sio, addr):
+        return self.emsg(sio, addr, 'go')
 
-def ehome(sio, addr):
-    return emsg(sio, addr, 'ho1')
+    def ejogstep(self,sio, addr):
+        return self.emsg(sio, addr, 'gj')
 
-def deg2estep(deg):
-    return int(deg * 262144/360)
+    def epos(self,sio, addr):
+        return self.emsg(sio, addr, 'gp')
 
-def estep2ehex(step):
-    return hex(step)[2:].zfill(8).upper()
+    def ehome(self,sio, addr):
+        return self.emsg(sio, addr, 'ho1')
 
-def eabsm(sio, addr, deg):
-    step = deg2estep(deg)
-    hstep = estep2ehex(step)
-    return emsg(sio, addr, 'ma' + hstep)
+    def deg2estep(self,deg):
+        return int(deg * 262144/360)
+
+    def estep2ehex(self,step):
+        return hex(step)[2:].zfill(8).upper()
+
+    def eabsm(self, sio, addr, deg):
+        step = self.deg2estep(deg)
+        hstep = self.estep2ehex(step)
+        return self.emsg(sio, addr, 'ma' + hstep)
