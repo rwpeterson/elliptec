@@ -48,7 +48,7 @@ def deg2estep(deg):
     return int(deg * 262144/360)
 
 def estep2ehex(step):
-    return hex(step)[2:].zfill(8)
+    return hex(step)[2:].zfill(8).upper()
 
 def eabsm(sio, addr, deg):
     step = deg2estep(deg)
