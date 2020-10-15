@@ -4,7 +4,7 @@ import serial
 
 class ThorlabsELLx:
     def __init__(self):
-        pass
+        self.ppdeg=262144
         
 
     def elliptec_open(self,dev):
@@ -50,8 +50,14 @@ class ThorlabsELLx:
     def ehome(self,sio, addr):
         return self.emsg(sio, addr, 'ho1')
 
+    def egetscaling(self,sio, addr):
+        info = self.eident(sio, addr)
+        ppu=int(info.strip()[-8:],16)
+        print(ppu)
+        self.ppdeg=ppu
+
     def deg2estep(self,deg):
-        return int(deg * 262144/360)
+        return int(deg * self.ppdeg/360)
 
     def estep2ehex(self,step):
         return hex(step)[2:].zfill(8).upper()
