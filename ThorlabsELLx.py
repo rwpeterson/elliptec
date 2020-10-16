@@ -9,8 +9,8 @@ class ThorlabsELLx:
         self.openbuffer()
         self.scaling = {}
         for addr in addrs:
-            id = self.ident(addr)
-            if not id:
+            info = self.ident(addr)
+            if not info:
                 print('Motor ' + str(addr) + ' not found!')
             else:
                 self.scaling[addr] = int(info.strip()[-8:],16)
