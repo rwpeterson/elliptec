@@ -5,8 +5,8 @@ import serial
 class ThorlabsELLx:
     '''Thorlabs ELLx controller, can address up to 16 motors'''
     def __init__(self, dev, addrs):
-        self.ser = self.openserial(dev)
-        self.sio = self.openbuffer(self.ser)
+        self.openserial(dev)
+        self.openbuffer()
         self.scaling = {}
         for addr in addrs:
             id = self.ident(addr)
@@ -22,18 +22,18 @@ class ThorlabsELLx:
         self.ser.close()
 
     def openserial(self, dev):
-        ser = serial.Serial(dev,
-                            9600,
-                            bytesize=serial.EIGHTBITS,
-                            parity=serial.PARITY_NONE,
-                            stopbits=serial.STOPBITS_ONE,
-                            timeout=1)
-        return ser
+        '''Open serial connection.'''
+        self.ser = serial.Serial(dev,
+                                 9600,
+                                 bytesize=serial.EIGHTBITS,
+                                 parity=serial.PARITY_NONE,
+                                 stopbits=serial.STOPBITS_ONE,
+                                 timeout=1)
 
-    def openbuffer(self, ser):
-        sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser),
-                            newline='\r\n')
-        return sio
+    def openbuffer(self):
+        '''Open io buffer wrapping serial connection.'''
+        self.sio = io.TextIOWrapper(io.BufferedRWPair(self.ser, self.ser),
+                                    newline='\r\n')
 
     def bufmsg(self, msg):
         '''Primitive to send message to controller and return response.'''
@@ -44,7 +44,7 @@ class ThorlabsELLx:
     def msg(self, addr, msg):
         '''Convenience function for commands which begin with address.'''
         addr = str(int(addr, 16))
-        return self.bufmsg(self.sio, addr + msg)
+        return self.bufmsg(addr + msg)
 
     def ident(self, addr):
         '''Get basic identification from motor.
