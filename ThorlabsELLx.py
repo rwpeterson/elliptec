@@ -3,11 +3,23 @@ import serial
 
 
 class ThorlabsELLx:
-    def __init__(self):
-        self.ppdeg=262144
-        
+    def __init__(self, dev, addrs):
+        self.ser = self.openserial(dev)
+        self.sio = self.openbuffer(self.ser)
+        self.scaling = {}
+        for addr in addrs:
+            id = self.ident(addr)
+            if not id:
+                print('Motor ' + str(addr) + ' not found!')
+            else:
+                self.scaling[addr] = int(info.strip()[-8:],16)
 
-    def elliptec_open(self,dev):
+    def close(self):
+        # Still not sure how to sequentially close these without errors
+        self.sio.close()
+        self.ser.close()
+
+    def openserial(self, dev):
         ser = serial.Serial(dev,
                             9600,
                             bytesize=serial.EIGHTBITS,
@@ -16,53 +28,47 @@ class ThorlabsELLx:
                             timeout=1)
         return ser
 
-    def elliptec_buffer(self,ser):
+    def openbuffer(self, ser):
         sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser),
                             newline='\r\n')
         return sio
 
-    def bufmsg(self,sio, msg):
-        sio.write(msg)
-        sio.flush()
-        return sio.readline()
+    def bufmsg(self, msg):
+        self.sio.write(msg)
+        self.sio.flush()
+        return self.sio.readline()
 
-    def emsg(self,sio, addr, msg):
+    def msg(self, addr, msg):
         addr = str(int(addr, 16))
-        return self.bufmsg(sio, addr + msg)
+        return self.bufmsg(self.sio, addr + msg)
 
-    def eident(self,sio, addr):
-        return self.emsg(sio, addr,'in')
+    def ident(self, addr):
+        return self.msg(addr, 'in')
 
-    def emotorinfo(self,sio, addr):
-        i1 = self.emsg(sio, addr, 'i1')
-        i2 = self.emsg(sio, addr, 'i2')
+    def motorinfo(self, addr):
+        i1 = self.msg(addr, 'i1')
+        i2 = self.msg(addr, 'i2')
         return i1 + i2
 
-    def ehomeoff(self,sio, addr):
-        return self.emsg(sio, addr, 'go')
+    def homeoff(self, addr):
+        return self.msg(addr, 'go')
 
-    def ejogstep(self,sio, addr):
-        return self.emsg(sio, addr, 'gj')
+    def jogstep(self, addr):
+        return self.msg(addr, 'gj')
 
-    def epos(self,sio, addr):
-        return self.emsg(sio, addr, 'gp')
+    def pos(self, addr):
+        return self.msg(addr, 'gp')
 
-    def ehome(self,sio, addr):
-        return self.emsg(sio, addr, 'ho1')
+    def home(self, addr):
+        return self.msg(addr, 'ho1')
 
-    def egetscaling(self,sio, addr):
-        info = self.eident(sio, addr)
-        ppu=int(info.strip()[-8:],16)
-        print(ppu)
-        self.ppdeg=ppu
+    def deg2step(self, addr, deg):
+        return int(deg * self.scaling[addr]/360)
 
-    def deg2estep(self,deg):
-        return int(deg * self.ppdeg/360)
-
-    def estep2ehex(self,step):
+    def step2hex(self, step):
         return hex(step)[2:].zfill(8).upper()
 
-    def eabsm(self, sio, addr, deg):
-        step = self.deg2estep(deg)
-        hstep = self.estep2ehex(step)
-        return self.emsg(sio, addr, 'ma' + hstep)
+    def absm(self, addr, deg):
+        step = self.deg2step(addr, deg)
+        hstep = self.step2hex(step)
+        return self.msg(addr, 'ma' + hstep)
