@@ -17,5 +17,5 @@ fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.set(xlabel="Angle (deg)",
        ylabel="Power (W)")
-ax.semilogy(ang,pwr/np.max(pwr),'ko')
+ax.semilogy(ang,pwr,'ko')
 plt.savefig("logplot.png", bbox_inches='tight',dpi=300)
