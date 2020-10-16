@@ -13,7 +13,7 @@ class ThorlabsELLx:
             if not info:
                 print('Motor ' + str(addr) + ' not found!')
             else:
-                self.scaling[addr] = int(info.strip()[-8:],16)
+                self.scaling[addr] = int(info.strip()[-8:], 16)
 
     def close(self):
         '''Shut down the buffer and serial connection cleanly.'''
@@ -52,9 +52,10 @@ class ThorlabsELLx:
         return self.msg(addr, 'in')
 
     def motorinfo(self, addr):
-        i1 = self.msg(addr, 'i1')
-        i2 = self.msg(addr, 'i2')
-        return i1 + i2
+        '''More detailed motor information.'''
+        i = self.msg(addr, 'i1')
+        j = self.msg(addr, 'i2')
+        return i + j
 
     def homeoff(self, addr):
         '''Requests the motor's home position, relative to the absolute
