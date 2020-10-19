@@ -1,3 +1,5 @@
+"""Communicate with a Thorlabs elliptec controller."""
+
 import io
 import serial
 
