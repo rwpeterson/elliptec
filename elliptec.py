@@ -2,8 +2,8 @@ import io
 import serial
 
 
-class ThorlabsELLx:
-    '''Thorlabs ELLx controller, can address up to 16 motors'''
+class Elliptec:
+    '''Thorlabs elliptec controller, can address up to 16 motors'''
     def __init__(self, dev, addrs):
         self.openserial(dev)
         self.openbuffer()

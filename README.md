@@ -1,4 +1,4 @@
- # ThorlabsELLx
+ # elliptec
 
  Python interface to Thorlabs Elliptec motorized mounts
 
