@@ -10,6 +10,7 @@ class Elliptec:
         self.openserial(dev)
         self.openbuffer()
         self.scaling = {}
+        self.zero = {}
         for addr in addrs:
             info = self.ident(addr)
             if not info:
