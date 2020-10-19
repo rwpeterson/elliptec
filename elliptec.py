@@ -92,3 +92,23 @@ class Elliptec:
         step = self.deg2step(addr, deg)
         hstep = self.step2hex(step)
         return self.msg(addr, 'ma' + hstep)
+
+    def setcal(self, addrs, angles):
+        '''Set a calibration offset for motor at addr, so that the cal-
+        series of commands will move relative to this offset from the
+        home position. Accepts an individual address and angle, or lists
+        of both.'''
+        try:
+           	for addr, angle in zip(addrs, angles):
+    			self.zero[addr] = angle
+    	except TypeError:
+    		self.zero[addrs] = angles
+
+    def calmove(self, addrs, angles):
+        '''Move motor at addr to angle relative to calibration offset.
+        Accepts an individual address and angle, or lists of both.'''
+    	try:
+	    	for addr, angle in zip(addrs, angles):
+	    		self.absm(addr, self.zero[addr] + angle)
+	    except TypeError:
+	    	self.absm(addrs, self.zero[addrs] + angles)
