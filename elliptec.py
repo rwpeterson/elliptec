@@ -5,7 +5,9 @@ import serial
 
 
 class Elliptec:
-    """Thorlabs elliptec controller, can address up to 16 motors"""
+    """Initialize serial communication with the elliptec controller, and
+    probe the motors at the supplied addresses to gather information and
+    perform an intial homing."""
     def __init__(self, dev, addrs):
         self.openserial(dev)
         self.openbuffer()
@@ -13,10 +15,17 @@ class Elliptec:
         self.zero = {}
         for addr in addrs:
             info = self.ident(addr)
+            # TODO: logic to determine which type of device is at each
+            # address should go here. Individual methods that depend
+            # on the device type should access device information
+            # stored here.
             if not info:
                 print('Motor ' + str(addr) + ' not found!')
             else:
                 self.scaling[addr] = int(info.strip()[-8:], 16)
+                # An initial homing must be performed to establish a
+                # datum for subsequent moving
+                self.home(addr)
 
     def close(self):
         """Shut down the buffer and serial connection cleanly."""
