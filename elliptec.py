@@ -93,7 +93,10 @@ class Elliptec:
         limit of travel.
         Note: Thorlabs warns NOT to set the home position to a custom
               value, since it is factory-set to ensure consistent
-              homing."""
+              homing. For the ELL14 rotation mount, the position can
+              only be changed up to 90 deg. See the setcal/cal* methods
+              for a convenient way to set an arbitrary offset for
+              successive movements."""
         return self.msg(addr, 'go')
 
     def jogstep(self, addr):
