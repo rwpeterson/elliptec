@@ -69,6 +69,25 @@ class Elliptec:
         j = self.msg(addr, 'i2')
         return i + j
 
+    def changeaddress(self, addr, naddr):
+        """Change address of module at addr to naddr."""
+        return self.msg(addr, 'ca' + naddr)
+
+    def groupaddress(self, addr, gaddr):
+        """Instruct module at addr to respond to the next command sent
+        to gaddr, in order to operate simultaneously. It will switch
+        back to responding to its own address after one operation.
+        Responses from multiple devices are ordered by their address,
+        with 0x0 having priority."""
+        return self.msg(addr, 'ga' + gaddr)
+
+    def cleanmechanics(self, addr):
+        """Perform cleaning cycle on module. Note: takes several
+        minutes and will block other commands, replying with busy.
+        Other modules on the same bus may have performance affected
+        during this time."""
+        return self.msg(addr, 'cm')
+
     def homeoff(self, addr):
         """Requests the motor's home position, relative to the absolute
         limit of travel.
