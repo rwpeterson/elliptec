@@ -87,17 +87,82 @@ class Elliptec:
         addr = str(int(addr, 16))
         return self.bufmsg(addr + msg)
 
-    def ident(self, addr):
-        """Get basic identification from motor.
-        Can be used to check if motor is connected."""
-        return self.msg(addr, 'in')
+    def getinfo(self, addr):
+        """Get information about module.
+        
+        Reply format:
+        | 0 | 1-2  | 3-4 | 5-12 | 13-16 | 17-18 | 19-20 | 21-24  | 25-32  |
+        | A | "IN" | ELL | SN   | YEAR  | FWREL | HWREL | TRAVEL | PULSES |
+        
+        Definitions:
+            A      - address
+            "IN"   - command name
+            ELL    - ELLxx part number
+            SN     - Serial number
+            YEAR   - year of mfg
+            FWREL  - firmware release
+            HWREL  - hardware release:
+                     MSB is thread (1 imperial/0 metric)
+                     rest is 7-bit hardware release
+            TRAVEL - travel in mm/deg
+            PULSES - pulses per position (bi-positional only)
+        """
+        return self.handler(self.msg(addr, 'in'))
+
+    def initinfo(self, addr, info):
+        """Parse and store module information string."""
+        self.info[addr] = {}
+        self.info[addr]["partnumber"] = info.strip()[3:5]
+        self.info[addr]["serialnumber"] = info.strip()[5:13]
+        self.info[addr]["year"] = info.strip()[13:17]
+        self.info[addr]["fwrel"] = info.strip()[17:19]
+        self.info[addr]["hwrel"] = info.strip()[19:21]
+        self.info[addr]["travel"] = info.strip()[21:25]
+        self.info[addr]["pulses"] = int(info.strip()[25:33]
+        return
 
     def motorinfo(self, addr):
         """More detailed motor information."""
         i = self.msg(addr, 'i1')
         j = self.msg(addr, 'i2')
-        return i + j
+        return self.handler(i + j)
 
+    def getmotorinfo1(self, addr):
+        """Get motor 1 parameters from module.
+
+        Reply format:
+        | 0 | 1-2  | 3    | 4     | 5-8     | 9-12   | 13-16  | 17-20  | 21-24  |
+        | A | "I1" | LOOP | MOTOR | CURRENT | RAMPUP | RAMPDN | FWDPER | BAKPER |
+
+        Definitions:
+        A - address
+        "I1" - command name
+        LOOP - state of loop (1 = ON)
+        MOTOR - state of motor (1 = ON)
+        CURRENT - 1866 points is 1 amp
+        RAMPUP - PWM increase every ms (0xFFFF undef.)
+        RAMPDN - PWN decrease every ms
+        FWDPER - forward period value
+        BAKPER - backward period value
+        period value - 14,740,000/frequency
+        """
+        return self.handler(self.msg(addr, 'i1'))
+
+    def getmotorinfo2(self, addr):
+        """Get motor 2 parameters from module, for devices which have two motors."""
+        return self.handler(self.msg(addr, 'i2'))
+
+    def storemotorinfo(self, num, m):
+        """Parses and stores motor info for motor <num>."""
+        self.info[addr][num] = {}
+        self.info[addr][num]["loop"]           = int(m.strip()[3:4])
+        self.info[addr][num]["motor"]          = int(m.strip()[4:5])
+        self.info[addr][num]["current"]        = int(m.strip()[5:9], 16) / 1866
+        self.info[addr][num]["rampup"]         = int(m.strip()[9:13], 16)
+        self.info[addr][num]["rampdown"]       = int(m.strip()[13:17], 16)
+        self.info[addr][num]["forwardperiod"]  = 14740000 / int(m.strip()[17:21], 16)
+        self.info[addr][num]["backwardperiod"] = 14740000 / int(m.strip()[21:25], 16)
+    
     def changeaddress(self, addr, naddr):
         """Change address of module at addr to naddr."""
         return self.msg(addr, 'ca' + naddr)
