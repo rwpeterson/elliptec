@@ -35,15 +35,19 @@ class ElliptecError(Error):
 
 class Elliptec:
     """Initialize serial communication with the elliptec controller, and
-    probe the motors at the supplied addresses to gather information and
+    probe the modules at the supplied addresses to gather information and
     perform an intial homing."""
-    def __init__(self, dev, addrs):
+    def __init__(self, dev, addrs, hmode=PASS):
         self.openserial(dev)
         self.openbuffer()
-        self.scaling = {}
+        self.info = {}
         self.zero = {}
+        self.hmode = hmode
+        self.hct = 0
+        self.sct = 0
         for addr in addrs:
-            info = self.ident(addr)
+            info = self.getinfo(addr)
+            self.initinfo(addr, info)
             # TODO: logic to determine which type of device is at each
             # address should go here. Individual methods that depend
             # on the device type should access device information
@@ -51,16 +55,54 @@ class Elliptec:
             if not info:
                 print('Motor ' + str(addr) + ' not found!')
             else:
-                self.scaling[addr] = int(info.strip()[-8:], 16)
                 # An initial homing must be performed to establish a
                 # datum for subsequent moving
                 self.home(addr)
 
-    def close(self):
-        """Shut down the buffer and serial connection cleanly."""
-        # Still not sure how to sequentially close these without errors
-        self.sio.close()
-        self.ser.close()
+    def handler(self, retval, statusbusy, statusfinal):
+        """Processes replies from modules, optionally handling errors
+        and deferring resolution of busy modules until later.
+        
+        ## Modes
+
+        PASS: After every command, wait on readline() to capture one
+        line of reply. Then pass it without checking for an error. This
+        is a crude solution for commands which always result in one
+        reply, blocking until that reply is received. It will cause
+        problems if multiple lines are received per command. Examples
+        include errors encountered and reported autonomously by the
+        modules, and the result of commands like groupaddress that cause
+        multiple modules to obey (and respond) to a single command.
+
+        ERROR: Same as PASS, but raise an error if the reply is
+        not as expected.
+
+        LAZY: Send commands, keep track of the expected number of
+        replies but wait until a user-defined time to process them
+        (and possibly check for additional errors)
+
+        
+        
+        """
+        if hmode == PASS:
+            return retval
+        elif hmode == ERROR:
+            status = self.parsestatus(retval)
+            if status != statusbusy or status != statusfinal:
+                raise ElliptecError
+            else
+                return retval
+        elif hmode == LAZY:
+            return
+
+    def readmsgs(self):
+        """Collect the expected number of replies from the modules."""
+        msgs = []
+        for i in range(self.sct):
+            msgs.append(self.sio.readline())
+        self.sct = 0
+        return msgs
+            
 
     def openserial(self, dev):
         """Open serial connection."""
@@ -76,16 +118,30 @@ class Elliptec:
         self.sio = io.TextIOWrapper(io.BufferedRWPair(self.ser, self.ser),
                                     newline='\r\n')
 
+    def close(self):
+        """Shut down the buffer and serial connection cleanly."""
+        # TODO: Still not sure how to sequentially close these without errors
+        self.sio.close()
+        self.ser.close()
+
     def bufmsg(self, msg):
-        """Primitive to send message to controller and return response."""
+        """Send message to module and wait on readline() for a response."""
         self.sio.write(msg)
         self.sio.flush()
         return self.sio.readline()
 
+    def sndmsg(self, msg):
+        """Send message to module without waiting for a response."""
+        self.sio.write(msg)
+
     def msg(self, addr, msg):
-        """Convenience function for commands which begin with address."""
+        """Send message to module, handling reply according to hmode"""
         addr = str(int(addr, 16))
-        return self.bufmsg(addr + msg)
+        if self.hmode == PASS or self.hmode == ERROR:
+            return self.bufmsg(addr + msg)
+        elif self.hmode == LAZY:
+            self.smsg += 1
+            return self.sndmsg(addr + msg)
 
     def getinfo(self, addr):
         """Get information about module.
@@ -122,7 +178,7 @@ class Elliptec:
         return
 
     def motorinfo(self, addr):
-        """More detailed motor information."""
+        """more detailed motor information."""
         i = self.msg(addr, 'i1')
         j = self.msg(addr, 'i2')
         return self.handler(i + j)
@@ -164,23 +220,23 @@ class Elliptec:
         self.info[addr][num]["backwardperiod"] = 14740000 / int(m.strip()[21:25], 16)
     
     def changeaddress(self, addr, naddr):
-        """Change address of module at addr to naddr."""
-        return self.msg(addr, 'ca' + naddr)
+        """Change address of module at addr to naddr. Expected reply: GS00 from new address."""
+        return self.handler(self.msg(addr, 'ca' + naddr), )
 
     def groupaddress(self, addr, gaddr):
-        """Instruct module at addr to respond to the next command sent
-        to gaddr, in order to operate simultaneously. It will switch
+        """instruct module at addr to respond to the next command sent
+        to gaddr, in order to operate simultaneously. it will switch
         back to responding to its own address after one operation.
         Responses from multiple devices are ordered by their address,
         with 0x0 having priority."""
-        return self.msg(addr, 'ga' + gaddr)
+        return self.handler(self.msg(addr, 'ga' + gaddr))
 
     def cleanmechanics(self, addr):
         """Perform cleaning cycle on module. Note: takes several
         minutes and will block other commands, replying with busy.
         Other modules on the same bus may have performance affected
         during this time."""
-        return self.msg(addr, 'cm')
+        return self.handler(self.msg(addr, 'cm'))
 
     def homeoff(self, addr):
         """Requests the motor's home position, relative to the absolute
@@ -191,24 +247,24 @@ class Elliptec:
               only be changed up to 90 deg. See the setcal/cal* methods
               for a convenient way to set an arbitrary offset for
               successive movements."""
-        return self.msg(addr, 'go')
+        return self.handler(self.msg(addr, 'go'))
 
     def jogstep(self, addr):
         """Requests jog length."""
-        return self.msg(addr, 'gj')
+        return self.handler(self.msg(addr, 'gj'))
 
     def pos(self, addr):
         """Requests current motor position."""
-        return self.msg(addr, 'gp')
+        return self.handler(self.msg(addr, 'gp'))
 
     def home(self, addr):
         """Move motor to home position. For rotary stages, byte 3 sets
         direction: 0 CW and 1 CCW."""
-        return self.msg(addr, 'ho1')
+        return self.handler(self.msg(addr, 'ho1'))
 
     def deg2step(self, addr, deg):
         """Use scaling factor queried from motor during init."""
-        return int(deg * self.scaling[addr]/360)
+        return int(deg * self.info[addr]["pulses"]/360)
 
     @staticmethod
     def step2hex(step):
@@ -220,7 +276,7 @@ class Elliptec:
         """Move motor to specified absolute position."""
         step = self.deg2step(addr, deg)
         hstep = self.step2hex(step)
-        return self.msg(addr, 'ma' + hstep)
+        return self.handler(self.msg(addr, 'ma' + hstep))
 
     def setcal(self, addrs, angles):
         """Set a calibration offset for motor at addr, so that the cal-
