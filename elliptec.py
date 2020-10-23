@@ -3,6 +3,35 @@
 import io
 import serial
 
+# Error codes for controller
+OK               = 00
+COMM_TIMEOUT     = 01
+MECH_TIMEOUT     = 02
+COMMAND_ERR      = 03
+VAL_OUT_OF_RANGE = 04
+MOD_ISOLATED     = 05
+MOD_OUT_OF_ISOL  = 06
+INIT_ERROR       = 07
+THERMAL_ERROR    = 08
+BUSY             = 09
+SENSOR_ERROR     = 10
+MOTOR_ERROR      = 11
+OUT_OF_RANGE     = 12
+OVER_CURRENT     = 13
+GENERAL_ERROR    = 14
+
+# Error handling modes
+PASS = 0
+ERROR = 1
+LAZY = 2
+
+class Error(Exception):
+    """Base class"""
+    pass
+
+class ElliptecError(Error):
+    """Reply to command indicates an error has occured"""
+    pass
 
 class Elliptec:
     """Initialize serial communication with the elliptec controller, and
