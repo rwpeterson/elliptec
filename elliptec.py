@@ -119,8 +119,8 @@ class Elliptec:
 
     def close(self):
         """Shut down the buffer and serial connection cleanly."""
-        # TODO: Still not sure how to sequentially close these without errors
-        self.sio.close()
+        # TODO: Still not sure how to sequentially close these without errors.
+        # Should sio be closed too?
         self.ser.close()
 
     def bufmsg(self, msg):
