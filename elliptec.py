@@ -226,7 +226,7 @@ class Elliptec:
         return self.handler(self.msg(addr, 'ca' + naddr), )
     
     def saveuserdata(self, addr):
-        """Get motor 2 parameters from module, for devices which have two motors."""
+        """Instruct device to save motor parameters (e.g. frequencies or address)."""
         return self.handler(self.msg(addr, 'us'))
 
     def groupaddress(self, addr, gaddr):
