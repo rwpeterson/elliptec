@@ -90,7 +90,7 @@ class Elliptec:
             status = self.parsestatus(retval)
             if status != statusbusy or status != statusfinal:
                 raise ElliptecError
-            else
+            else:
                 return retval
         elif hmode == LAZY:
             return
