@@ -4,21 +4,21 @@ import io
 import serial
 
 # Error codes for controller
-OK               = 00
-COMM_TIMEOUT     = 01
-MECH_TIMEOUT     = 02
-COMMAND_ERR      = 03
-VAL_OUT_OF_RANGE = 04
-MOD_ISOLATED     = 05
-MOD_OUT_OF_ISOL  = 06
-INIT_ERROR       = 07
-THERMAL_ERROR    = 08
-BUSY             = 09
-SENSOR_ERROR     = 10
-MOTOR_ERROR      = 11
-OUT_OF_RANGE     = 12
-OVER_CURRENT     = 13
-GENERAL_ERROR    = 14
+OK               = 0x00
+COMM_TIMEOUT     = 0x01
+MECH_TIMEOUT     = 0x02
+COMMAND_ERR      = 0x03
+VAL_OUT_OF_RANGE = 0x04
+MOD_ISOLATED     = 0x05
+MOD_OUT_OF_ISOL  = 0x06
+INIT_ERROR       = 0x07
+THERMAL_ERROR    = 0x08
+BUSY             = 0x09
+SENSOR_ERROR     = 0x10
+MOTOR_ERROR      = 0x11
+OUT_OF_RANGE     = 0x12
+OVER_CURRENT     = 0x13
+GENERAL_ERROR    = 0x14
 
 # Error handling modes
 PASS = 0
