@@ -84,15 +84,15 @@ class Elliptec:
         
         
         """
-        if hmode == PASS:
+        if self.hmode == PASS:
             return retval
-        elif hmode == ERROR:
+        elif self.hmode == ERROR:
             status = self.parsestatus(retval)
             if status != statusbusy or status != statusfinal:
                 raise ElliptecError
             else:
                 return retval
-        elif hmode == LAZY:
+        elif self.hmode == LAZY:
             return 
 
     def readmsgs(self):
