@@ -93,7 +93,7 @@ class Elliptec:
             else:
                 return retval
         elif hmode == LAZY:
-            return
+            return 
 
     def readmsgs(self):
         """Collect the expected number of replies from the modules."""
@@ -174,7 +174,7 @@ class Elliptec:
         self.info[addr]["fwrel"] = info.strip()[17:19]
         self.info[addr]["hwrel"] = info.strip()[19:21]
         self.info[addr]["travel"] = info.strip()[21:25]
-        self.info[addr]["pulses"] = int(info.strip()[25:33]
+        self.info[addr]["pulses"] = int(info.strip()[25:33])
         return
 
     def motorinfo(self, addr):
