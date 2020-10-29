@@ -176,7 +176,7 @@ class Elliptec:
         self.info[addr]["fwrel"] = info.strip()[17:19]
         self.info[addr]["hwrel"] = info.strip()[19:21]
         self.info[addr]["travel"] = info.strip()[21:25]
-        self.info[addr]["pulses"] = int(info.strip()[25:33])
+        self.info[addr]["pulses"] = int(info.strip()[25:33],16)
         return
 
     def motorinfo(self, addr):
