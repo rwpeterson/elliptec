@@ -111,7 +111,7 @@ class Elliptec:
                                  bytesize=serial.EIGHTBITS,
                                  parity=serial.PARITY_NONE,
                                  stopbits=serial.STOPBITS_ONE,
-                                 timeout=1)
+                                 timeout=2)
 
     def openbuffer(self):
         """Open io buffer wrapping serial connection."""
