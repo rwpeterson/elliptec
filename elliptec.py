@@ -45,6 +45,7 @@ class Elliptec:
         self.hmode = hmode
         self.hct = 0
         self.sct = 0
+        self.ser.timeout=2
         for addr in addrs:
             info = self.getinfo(addr)
             self.initinfo(addr, info)
@@ -58,6 +59,7 @@ class Elliptec:
                 # An initial homing must be performed to establish a
                 # datum for subsequent moving
                 self.home(addr)
+        self.ser.timeout=1
 
     def handler(self, retval, statusbusy, statusfinal):
         """Processes replies from modules, optionally handling errors
@@ -111,7 +113,7 @@ class Elliptec:
                                  bytesize=serial.EIGHTBITS,
                                  parity=serial.PARITY_NONE,
                                  stopbits=serial.STOPBITS_ONE,
-                                 timeout=2)
+                                 timeout=1)
 
     def openbuffer(self):
         """Open io buffer wrapping serial connection."""
