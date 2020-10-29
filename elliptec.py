@@ -222,6 +222,10 @@ class Elliptec:
     def changeaddress(self, addr, naddr):
         """Change address of module at addr to naddr. Expected reply: GS00 from new address."""
         return self.handler(self.msg(addr, 'ca' + naddr), )
+    
+    def saveuserdata(self, addr):
+        """Get motor 2 parameters from module, for devices which have two motors."""
+        return self.handler(self.msg(addr, 'us'))
 
     def groupaddress(self, addr, gaddr):
         """instruct module at addr to respond to the next command sent
