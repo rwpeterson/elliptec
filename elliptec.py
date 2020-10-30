@@ -54,6 +54,7 @@ class Elliptec:
         self.hmode = hmode
         self.hct = 0
         self.sct = 0
+        self.ser.timeout=2
         for addr in addrs:
             info = self.getinfo(addr)
             self.initinfo(addr, info)
@@ -67,6 +68,7 @@ class Elliptec:
                 # An initial homing must be performed to establish a
                 # datum for subsequent moving
                 self.home(addr)
+        self.ser.timeout=1
 
     def handler(self, retval):
         """Process replies from modules according to error mode.
@@ -173,7 +175,7 @@ class Elliptec:
         self.info[addr]["fwrel"] = info.strip()[17:19]
         self.info[addr]["hwrel"] = info.strip()[19:21]
         self.info[addr]["travel"] = info.strip()[21:25]
-        self.info[addr]["pulses"] = int(info.strip()[25:33])
+        self.info[addr]["pulses"] = int(info.strip()[25:33],16)
 
     def getmotorinfo1(self, addr):
         """Get motor 1 parameters from module.
@@ -222,6 +224,12 @@ class Elliptec:
         Expected reply: GS00 from new address.
         """
         return self.handler(self.msg(addr, 'ca' + naddr))
+    
+    def saveuserdata(self, addr):
+        """Instruct device to save motor parameters.
+        
+        Required for persistent custom frequencies or addresses."""
+        return self.handler(self.msg(addr, 'us'))
 
     def groupaddress(self, addr, gaddr):
         """Instruct module at `addr` to respond to `gaddr`.
