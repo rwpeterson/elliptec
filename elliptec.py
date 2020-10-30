@@ -252,7 +252,7 @@ class Elliptec:
         """
         return self.handler(self.msg(addr, 'cm'))
 
-    def homeoff(self, addr):
+    def homeoffset(self, addr):
         """Request the motor's home position.
 
         Note: Thorlabs warns NOT to set the home position to a custom
@@ -291,7 +291,7 @@ class Elliptec:
         """
         return hex(step)[2:].zfill(8).upper()
 
-    def absm(self, addr, deg):
+    def moveabsolute(self, addr, deg):
         """Move motor to specified absolute position."""
         step = self.deg2step(addr, deg)
         hstep = self.step2hex(step)
@@ -317,6 +317,6 @@ class Elliptec:
         """
         try:
             for addr, angle in zip(addrs, angles):
-                self.absm(addr, self.zero[addr] + angle)
+                self.moveabsolute(addr, self.zero[addr] + angle)
         except TypeError:
-            self.absm(addrs, self.zero[addrs] + angles)
+            self.moveabsolute(addrs, self.zero[addrs] + angles)
