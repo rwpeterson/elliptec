@@ -175,12 +175,12 @@ class Elliptec:
     def initinfo(self, addr, info):
         """Parse and store module information string."""
         self.info[addr] = {}
-        self.info[addr]["partnumber"] = info.strip()[3:5]
-        self.info[addr]["serialnumber"] = info.strip()[5:13]
-        self.info[addr]["year"] = info.strip()[13:17]
-        self.info[addr]["fwrel"] = info.strip()[17:19]
-        self.info[addr]["hwrel"] = info.strip()[19:21]
-        self.info[addr]["travel"] = info.strip()[21:25]
+        self.info[addr]["partnumber"] = int(info.strip()[3:5], 16)
+        self.info[addr]["serialnumber"] = int(info.strip()[5:13])
+        self.info[addr]["year"] = int(info.strip()[13:17])
+        self.info[addr]["fwrel"] = int(info.strip()[17:19])
+        self.info[addr]["hwrel"] = int(info.strip()[19:21])
+        self.info[addr]["travel"] = int(info.strip()[21:25], 16)
         self.info[addr]["pulses"] = int(info.strip()[25:33], 16)
 
     def getmotorinfo1(self, addr):
