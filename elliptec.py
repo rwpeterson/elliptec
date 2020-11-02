@@ -31,8 +31,14 @@ class Error(Exception):
     pass
 
 
-class ElliptecError(Error):
+class ReportedError(Error):
     """Reply to command indicates an error has occured."""
+
+    pass
+
+
+class ModuleError(Error):
+    """The specified command is not supported for this module."""
 
     pass
 
@@ -52,8 +58,9 @@ class Elliptec:
         self.info = dict()
         self.zero = dict()
         self.ser.timeout = 2
+        self.addrs = addrs
         for addr in addrs:
-            info = self.getinfo(addr)
+            info = self.information(addr)
             self.initinfo(addr, info)
             # TODO: logic to determine which type of device is at each
             # address should go here. Individual methods that depend
@@ -120,7 +127,7 @@ class Elliptec:
         addr = str(int(addr, 16))
         return self.bufmsg(addr + msg)
 
-    def getinfo(self, addr):
+    def information(self, addr):
         """Get information about module.
 
         Reply format:
@@ -153,7 +160,7 @@ class Elliptec:
         self.info[addr]["travel"] = int(info.strip()[21:25], 16)
         self.info[addr]["pulses"] = int(info.strip()[25:33], 16)
 
-    def getmotorinfo1(self, addr):
+    def motor1info(self, addr):
         """Get motor 1 parameters from module.
 
         Reply format:
@@ -174,7 +181,7 @@ class Elliptec:
         """
         return self.handler(self.msg(addr, 'i1'))
 
-    def getmotorinfo2(self, addr):
+    def motor2info(self, addr):
         """Get motor 2 parameters from module.
 
         Only applies for devices which have two motors.
@@ -193,6 +200,14 @@ class Elliptec:
             14740000 / int(m.strip()[17:21], 16)
         self.info[addr][num]["backwardperiod"] = \
             14740000 / int(m.strip()[21:25], 16)
+
+    def status(self, addr):
+        """Get module status/error value and clear error."""
+        return self.handler(self.msg(addr, 'gs'))
+
+    def parsestatus(self, status):
+        """Convert return string for comparison to status constants."""
+        return int(status[3:5])
 
     def changeaddress(self, addr, naddr):
         """Change address of module at addr to naddr.
@@ -220,13 +235,46 @@ class Elliptec:
         return self.handler(self.msg(addr, 'ga' + gaddr))
 
     def cleanmechanics(self, addr):
-        """Perform cleaning cycle on module.
+        """Perform cleaning cycle on module (blocking).
 
         Note: takes several minutes and will block other commands,
               replying with busy. Other modules on the same bus may have
               performance affected during this time.
         """
-        return self.handler(self.msg(addr, 'cm'))
+        if self.info[addr]["partnumber"] in [14, 17, 18, 20]:
+            oto = self.ser.timeout
+            self.ser.timeout = 0
+            retval = self.msg(addr, 'cm')
+            self.ser.timeout = oto
+            return self.handler(retval)
+        else:
+            raise ModuleError
+
+    def optimizemotors(self, addr):
+        """Fine-tune frequency of motor and clean track (blocking).
+
+        Note: takes several minutes and will block other commands,
+              replying with busy. Other modules on the same bus may have
+              performance affected during this time.
+        """
+        if self.info[addr]["partnumber"] in [14, 17, 18, 20]:
+            oto = self.ser.timeout
+            self.ser.timeout = 0
+            retval = self.msg(addr, 'om')
+            self.ser.timeout = oto
+            return self.handler(retval)
+        else:
+            raise ModuleError
+
+    def stop(self, addr):
+        """Stop the optimization or cleaning process.
+
+        Note: Applies to ELL{14,17,18,20} devices only.
+        """
+        if self.info[addr]["partnumber"] in [14, 17, 18, 20]:
+            return self.handler(self.msg(addr, 'st'))
+        else:
+            raise ModuleError
 
     def homeoffset(self, addr):
         """Request the motor's home position.
@@ -253,7 +301,7 @@ class Elliptec:
 
         For rotary stages, byte 3 sets direction: 0 CW and 1 CCW.
         """
-        if self.info[addr]["partnumber"] == 14:
+        if self.info[addr]["partnumber"] in [14]:
             if dir == CW:
                 return self.handler(self.msg(addr, 'ho0'))
             else:
