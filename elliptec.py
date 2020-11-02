@@ -54,7 +54,7 @@ class Elliptec:
         self.openbuffer()
         self.info = dict()
         self.zero = dict()
-        self.hmode = hmode
+        self.hmode = PASS
         self.hct = 0
         self.sct = 0
         self.ser.timeout = 2
@@ -72,6 +72,7 @@ class Elliptec:
                 # datum for subsequent moving
                 self.home(addr)
         self.ser.timeout = 1
+        self.hmode = hmode
 
     def handler(self, retval):
         """Process replies from modules according to error mode.
@@ -103,6 +104,7 @@ class Elliptec:
     def readmsgs(self):
         """Collect the expected number of replies from the modules."""
         msgs = []
+        self.sio.flush()
         for i in range(self.sct):
             msgs.append(self.sio.readline())
         self.sct = 0
@@ -137,6 +139,7 @@ class Elliptec:
     def sndmsg(self, msg):
         """Send message to module without waiting for a response."""
         self.sio.write(msg)
+        self.sio.flush()
 
     def msg(self, addr, msg):
         """Send message to module, handling reply according to hmode."""
@@ -144,7 +147,7 @@ class Elliptec:
         if self.hmode == PASS or self.hmode == ERROR:
             return self.bufmsg(addr + msg)
         elif self.hmode == LAZY:
-            self.smsg += 1
+            self.sct += 1
             self.sndmsg(addr + msg)
 
     def getinfo(self, addr):
