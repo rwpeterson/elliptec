@@ -25,6 +25,9 @@ PASS = 0
 ERROR = 1
 LAZY = 2
 
+# Direction constants
+CW = 0
+CCW = 0
 
 class Error(Exception):
     """Base class."""
@@ -272,12 +275,18 @@ class Elliptec:
         """Request current motor position."""
         return self.handler(self.msg(addr, 'gp'))
 
-    def home(self, addr):
+    def home(self, addr, dir=CCW):
         """Move motor to home position.
 
         For rotary stages, byte 3 sets direction: 0 CW and 1 CCW.
         """
-        return self.handler(self.msg(addr, 'ho1'))
+        if self.info[addr]["partnumber"] == 14:
+            if dir == CW:
+                return self.handler(self.msg(addr, 'ho0'))
+            else:
+                return self.handler(self.msg(addr, 'ho1'))
+        else:
+            return self.handler(self.msg(addr, 'ho'))
 
     def deg2step(self, addr, deg):
         """Use scaling factor queried from motor during init."""
