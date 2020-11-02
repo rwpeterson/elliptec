@@ -20,11 +20,6 @@ OUT_OF_RANGE = 12
 OVER_CURRENT = 13
 GENERAL_ERROR = 14
 
-# Error handling modes
-PASS = 0
-ERROR = 1
-LAZY = 2
-
 # Direction constants
 CW = 0
 CCW = 0
@@ -50,15 +45,12 @@ class Elliptec:
     perform an intial homing.
     """
 
-    def __init__(self, dev, addrs, home=True, hmode=PASS):
+    def __init__(self, dev, addrs, home=True):
         """Initialize communication with controller and home all modules."""
         self.openserial(dev)
         self.openbuffer()
         self.info = dict()
         self.zero = dict()
-        self.hmode = PASS
-        self.hct = 0
-        self.sct = 0
         self.ser.timeout = 2
         for addr in addrs:
             info = self.getinfo(addr)
@@ -75,42 +67,21 @@ class Elliptec:
                 if home:
                     self.home(addr)
         self.ser.timeout = 1
-        self.hmode = hmode
 
     def handler(self, retval):
-        """Process replies from modules according to error mode.
+        """Process replies from modules.
 
-        By setting hmode in the Elliptec() class, handle errors returned
-        vis the modules accoring to the following modes.
-
-        Modes
-        -----
-        PASS
-            After every command, wait on readline() to capture one
-            line of reply. Then pass it without checking for an error. This
-            is a crude solution for commands which always result in one
-            reply, blocking until that reply is received. It will cause
-            problems if multiple lines are received per command. Examples
-            include errors encountered and reported autonomously by the
-            modules, and the result of commands like groupaddress that cause
-            multiple modules to obey (and respond) to a single command.
-        LAZY
-            Send commands, keep track of the expected number of
-            replies but wait until a user-defined time to process them
-            (and possibly check for additional errors)
+        By wrapping messages to and from the modules, errors and other
+        status information can optionally be enabled here.
         """
-        if self.hmode == PASS:
-            return retval
-        elif self.hmode == LAZY:
-            return
+        return retval
 
-    def readmsgs(self):
+    def _readmsgs(self, count):
         """Collect the expected number of replies from the modules."""
         msgs = []
         self.sio.flush()
-        for i in range(self.sct):
+        for i in range(count):
             msgs.append(self.sio.readline())
-        self.sct = 0
         return msgs
 
     def openserial(self, dev):
@@ -139,7 +110,7 @@ class Elliptec:
         self.sio.flush()
         return self.sio.readline()
 
-    def sndmsg(self, msg):
+    def _sndmsg(self, msg):
         """Send message to module without waiting for a response."""
         self.sio.write(msg)
         self.sio.flush()
@@ -147,11 +118,7 @@ class Elliptec:
     def msg(self, addr, msg):
         """Send message to module, handling reply according to hmode."""
         addr = str(int(addr, 16))
-        if self.hmode == PASS or self.hmode == ERROR:
-            return self.bufmsg(addr + msg)
-        elif self.hmode == LAZY:
-            self.sct += 1
-            self.sndmsg(addr + msg)
+        return self.bufmsg(addr + msg)
 
     def getinfo(self, addr):
         """Get information about module.
