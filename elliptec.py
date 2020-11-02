@@ -29,6 +29,7 @@ LAZY = 2
 CW = 0
 CCW = 0
 
+
 class Error(Exception):
     """Base class."""
 
@@ -49,7 +50,8 @@ class Elliptec:
     perform an intial homing.
     """
 
-    def __init__(self, dev, addrs, hmode=PASS):
+    def __init__(self, dev, addrs, home=True, hmode=PASS):
+        """Initialize communication with controller and home all modules."""
         self.openserial(dev)
         self.openbuffer()
         self.info = dict()
@@ -70,7 +72,8 @@ class Elliptec:
             else:
                 # An initial homing must be performed to establish a
                 # datum for subsequent moving
-                self.home(addr)
+                if home:
+                    self.home(addr)
         self.ser.timeout = 1
         self.hmode = hmode
 
