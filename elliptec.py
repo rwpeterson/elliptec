@@ -81,7 +81,7 @@ class Elliptec:
     perform an intial homing.
     """
 
-    def __init__(self, dev, addrs, home=True):
+    def __init__(self, dev, addrs, home=True, freq=True, freqSave=True):
         """Initialize communication with controller and home all modules."""
         self.openserial(dev)
         self.openbuffer()
@@ -99,6 +99,12 @@ class Elliptec:
                 self.initinfo(addr, info)
                 # Also initialize the cal offset to zero
                 self.zero[addr] = 0
+                # The (second) initial frequency scan's result is not
+                # saved by default
+                if freq:
+                    self.searchfreq(addr)
+                    if freqSave:
+                        self.saveuserdata(addr)
                 # An initial homing must be performed to establish a
                 # datum for subsequent moving
                 if home:
@@ -305,6 +311,33 @@ class Elliptec:
             return self.handler(self.msg(addr, 'st'))
         else:
             raise ModuleError("Command not supported for this module")
+
+    def searchfreq1(self, addr):
+        """Scan and optimize resonant frequency of motor 1."""
+        return self.handler(self.msg(addr, 's1'))
+
+    def searchfreq2(self, addr):
+        """Scan and optimize resonant frequency of motor 2."""
+        return self.handler(self.msg(addr, 's2'))
+
+    def searchfreq3(self, addr):
+        """Scan and optimize resonant frequency of motor 3."""
+        return self.handler(self.msg(addr, 's3'))
+
+    def searchfreq(self, addr):
+        """Scan and optimize resonant frequencies of all motors."""
+        if self.info[addr]["partnumber"] in modtype["indexed"]:
+            s1 = self.searchfreq1(addr)
+            if s1 != OK:
+                raise ReportedError(errmsg[s1])
+        elif self.info[addr]["partnumber"] in modtype["linrot"]:
+            s1 = self.parsestatus(self.searchfreq1(addr))
+            s2 = self.parsestatus(self.searchfreq2(addr))
+            if s1 != OK or s2 != OK:
+                raise ReportedError("M1: " + errmsg[s1] +
+                                    " M2: " + errmsg[s2])
+        else:
+            raise ModuleError
 
     def homeoffset(self, addr):
         """Request the motor's home position.
