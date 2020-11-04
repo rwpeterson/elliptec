@@ -312,7 +312,7 @@ class Elliptec:
 
         For rotary stages, byte 3 sets direction: 0 CW and 1 CCW.
         """
-        if self.info[addr]["partnumber"] in [14]:
+        if self.info[addr]["partnumber"] in movtype["linear"]+movtype["rotary"]:
             if dir == CW:
                 return self.handler(self.msg(addr, 'ho0'))
             else:
@@ -323,6 +323,10 @@ class Elliptec:
     def deg2step(self, addr, deg):
         """Use scaling factor queried from motor during init."""
         return int(deg * self.info[addr]["pulses"]/360)
+    
+    def mm2step(self, addr, mm):
+        """Use scaling factor queried from motor during init."""
+        return int(mm * self.info[addr]["pulses"])
 
     @staticmethod
     def step2hex(step):
@@ -332,9 +336,14 @@ class Elliptec:
         """
         return hex(step)[2:].zfill(8).upper()
 
-    def moveabsolute(self, addr, deg):
+    def moveabsolute(self, addr, pos):
         """Move motor to specified absolute position."""
-        step = self.deg2step(addr, deg)
+        if self.info[addr]["partnumber"] in movtype["rotary"]:
+            step = self.deg2step(addr, pos)
+        elif self.info[addr]["partnumber"] in movtype["linear"]:
+            step = self.mm2step(addr, pos)
+        else:
+            raise ModuleError
         hstep = self.step2hex(step)
         return self.handler(self.msg(addr, 'ma' + hstep))
 
