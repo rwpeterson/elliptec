@@ -29,8 +29,8 @@ modtype = {"linear": [7, 10, 17, 20],
            "rotary": [8, 14, 18],
            "indexed": [6, 9],
            "optclean": [14, 17, 18, 20]}
-# Linear stages also need direction bit in home
-modtype["home"] = modtype["linear"] + modtype["rotary"]
+# Linear plus rotary stages have same home cmd, same number of motors
+modtype["linrot"] = modtype["linear"] + modtype["rotary"]
 
 
 class Error(Exception):
@@ -315,7 +315,7 @@ class Elliptec:
 
         For rotary stages, byte 3 sets direction: 0 CW and 1 CCW.
         """
-        if self.info[addr]["partnumber"] in modtype["home"]:
+        if self.info[addr]["partnumber"] in modtype["linrot"]:
             if direction == CW:
                 return self.handler(self.msg(addr, 'ho0'))
             else:
