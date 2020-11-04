@@ -20,6 +20,22 @@ OUT_OF_RANGE = 12
 OVER_CURRENT = 13
 GENERAL_ERROR = 14
 
+errmsg = {0: "OK, no error",
+          1: "Communication timeout",
+          2: "Mechanical timeout",
+          3: "Command error or not supported",
+          4: "Value out of range",
+          5: "Module isolated",
+          6: "Module out of isolation",
+          7: "Initializing error",
+          8: "Thermal error",
+          9: "Busy",
+          10: "Sensor error",
+          11: "Motor error",
+          12: "Out of range",
+          13: "Over current error",
+          14: "Reserved"}
+
 # Direction constants
 CW = 0
 CCW = 0
