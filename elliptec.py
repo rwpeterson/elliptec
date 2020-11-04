@@ -323,6 +323,11 @@ class Elliptec:
         else:
             return self.handler(self.msg(addr, 'ho'))
 
+    def homeall(self, direction=CCW):
+        """Home all connected modules."""
+        for addr in self.addrs:
+            self.home(addr, direction)
+
     def deg2step(self, addr, deg):
         """Use scaling factor queried from motor during init."""
         return int(deg * self.info[addr]["pulses"]/360)
