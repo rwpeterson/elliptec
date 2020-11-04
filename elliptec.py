@@ -24,10 +24,13 @@ GENERAL_ERROR = 14
 CW = 0
 CCW = 0
 
-# device ids by movement type
-movtype = {"linear": [7, 10, 17, 20],
+# Device ids by module type
+modtype = {"linear": [7, 10, 17, 20],
            "rotary": [8, 14, 18],
-           "indexed": [6,9]}
+           "indexed": [6, 9],
+           "optclean": [14, 17, 18, 20]}
+# Linear stages also need direction bit in home
+modtype["home"] = modtype["linear"] + modtype["rotary"]
 
 
 class Error(Exception):
@@ -252,7 +255,7 @@ class Elliptec:
               replying with busy. Other modules on the same bus may have
               performance affected during this time.
         """
-        if self.info[addr]["partnumber"] in [14, 17, 18, 20]:
+        if self.info[addr]["partnumber"] in modtype["optclean"]:
             oto = self.ser.timeout
             self.ser.timeout = 0
             retval = self.msg(addr, 'cm')
@@ -268,7 +271,7 @@ class Elliptec:
               replying with busy. Other modules on the same bus may have
               performance affected during this time.
         """
-        if self.info[addr]["partnumber"] in [14, 17, 18, 20]:
+        if self.info[addr]["partnumber"] in modtype["optclean"]:
             oto = self.ser.timeout
             self.ser.timeout = 0
             retval = self.msg(addr, 'om')
@@ -282,7 +285,7 @@ class Elliptec:
 
         Note: Applies to ELL{14,17,18,20} devices only.
         """
-        if self.info[addr]["partnumber"] in [14, 17, 18, 20]:
+        if self.info[addr]["partnumber"] in modtype["optclean"]:
             return self.handler(self.msg(addr, 'st'))
         else:
             raise ModuleError("Command not supported for this module")
@@ -312,7 +315,7 @@ class Elliptec:
 
         For rotary stages, byte 3 sets direction: 0 CW and 1 CCW.
         """
-        if self.info[addr]["partnumber"] in movtype["linear"]+movtype["rotary"]:
+        if self.info[addr]["partnumber"] in modtype["home"]:
             if dir == CW:
                 return self.handler(self.msg(addr, 'ho0'))
             else:
@@ -323,7 +326,7 @@ class Elliptec:
     def deg2step(self, addr, deg):
         """Use scaling factor queried from motor during init."""
         return int(deg * self.info[addr]["pulses"]/360)
-    
+
     def mm2step(self, addr, mm):
         """Use scaling factor queried from motor during init."""
         return int(mm * self.info[addr]["pulses"])
@@ -338,9 +341,9 @@ class Elliptec:
 
     def moveabsolute(self, addr, pos):
         """Move motor to specified absolute position."""
-        if self.info[addr]["partnumber"] in movtype["rotary"]:
+        if self.info[addr]["partnumber"] in modtype["rotary"]:
             step = self.deg2step(addr, pos)
-        elif self.info[addr]["partnumber"] in movtype["linear"]:
+        elif self.info[addr]["partnumber"] in modtype["linear"]:
             step = self.mm2step(addr, pos)
         else:
             raise ModuleError
