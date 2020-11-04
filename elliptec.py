@@ -61,14 +61,16 @@ class Elliptec:
         """Initialize communication with controller and home all modules."""
         self.openserial(dev)
         self.openbuffer()
+        # info: module/motor info received during init
         self.info = dict()
+        # zero: per-module user calibration offset 
         self.zero = dict()
         self.ser.timeout = 2
         self.addrs = addrs
         for addr in addrs:
             info = self.information(addr)
             if not info:
-                raise MissingModule
+                raise MissingModule("No module found at supplied address")
             else:
                 self.initinfo(addr, info)
                 # An initial homing must be performed to establish a
@@ -250,7 +252,7 @@ class Elliptec:
             self.ser.timeout = oto
             return self.handler(retval)
         else:
-            raise ModuleError
+            raise ModuleError("Command not supported for this module")
 
     def optimizemotors(self, addr):
         """Fine-tune frequency of motor and clean track (blocking).
@@ -266,7 +268,7 @@ class Elliptec:
             self.ser.timeout = oto
             return self.handler(retval)
         else:
-            raise ModuleError
+            raise ModuleError("Command not supported for this module")
 
     def stop(self, addr):
         """Stop the optimization or cleaning process.
@@ -276,7 +278,7 @@ class Elliptec:
         if self.info[addr]["partnumber"] in [14, 17, 18, 20]:
             return self.handler(self.msg(addr, 'st'))
         else:
-            raise ModuleError
+            raise ModuleError("Command not supported for this module")
 
     def homeoffset(self, addr):
         """Request the motor's home position.
