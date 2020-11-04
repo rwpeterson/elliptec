@@ -73,6 +73,8 @@ class Elliptec:
                 raise MissingModule("No module found at supplied address")
             else:
                 self.initinfo(addr, info)
+                # Also initialize the cal offset to zero
+                self.zero[addr] = 0
                 # An initial homing must be performed to establish a
                 # datum for subsequent moving
                 if home:
