@@ -310,13 +310,13 @@ class Elliptec:
         """Request current motor position."""
         return self.handler(self.msg(addr, 'gp'))
 
-    def home(self, addr, dir=CCW):
+    def home(self, addr, direction=CCW):
         """Move motor to home position.
 
         For rotary stages, byte 3 sets direction: 0 CW and 1 CCW.
         """
         if self.info[addr]["partnumber"] in modtype["home"]:
-            if dir == CW:
+            if direction == CW:
                 return self.handler(self.msg(addr, 'ho0'))
             else:
                 return self.handler(self.msg(addr, 'ho1'))
