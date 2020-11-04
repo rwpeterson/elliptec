@@ -43,6 +43,12 @@ class ModuleError(Error):
     pass
 
 
+class MissingModule(Error):
+    """A module at the specified address was not found."""
+
+    pass
+
+
 class Elliptec:
     """Create class to manage Elliptec controller and connected modules.
 
@@ -61,14 +67,10 @@ class Elliptec:
         self.addrs = addrs
         for addr in addrs:
             info = self.information(addr)
-            self.initinfo(addr, info)
-            # TODO: logic to determine which type of device is at each
-            # address should go here. Individual methods that depend
-            # on the device type should access device information
-            # stored here.
             if not info:
-                print('Motor ' + str(addr) + ' not found!')
+                raise MissingModule
             else:
+                self.initinfo(addr, info)
                 # An initial homing must be performed to establish a
                 # datum for subsequent moving
                 if home:
