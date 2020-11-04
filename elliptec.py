@@ -63,7 +63,7 @@ class Elliptec:
         self.openbuffer()
         # info: module/motor info received during init
         self.info = dict()
-        # zero: per-module user calibration offset 
+        # zero: per-module user calibration offset
         self.zero = dict()
         self.ser.timeout = 2
         self.addrs = addrs
@@ -333,26 +333,44 @@ class Elliptec:
         hstep = self.step2hex(step)
         return self.handler(self.msg(addr, 'ma' + hstep))
 
-    def setcal(self, addrs, angles):
-        """Set a calibration offset for motor at `addr`.
+    def setcal(self, *args):
+        """Set a calibration offset for modules `addrs` to `xs`.
 
-        The cal- series of commands will move relative to this offset from the
-        home position. Accepts an individual address and angle, or lists
-        of both.
+        The cal series of commands will move relative to this offset
+        from the home position. Accepts an individual address and position,
+        or lists of both. If no addresses are provided, all initialized
+        addresses will be used.
         """
+        if len(args) == 1:
+            addrs = self.addrs
+            xs = args[0]
+        elif len(args) == 2:
+            addrs = args[0]
+            xs = args[1]
+        else:
+            raise TypeError("Too many arguments")
         try:
-            for addr, angle in zip(addrs, angles):
-                self.zero[addr] = angle
+            for addr, x in zip(addrs, xs):
+                self.zero[addr] = x
         except TypeError:
-            self.zero[addrs] = angles
+            self.zero[addrs] = xs
 
-    def calmove(self, addrs, angles):
-        """Move motor at addr to angle relative to calibration offset.
+    def calmove(self, *args):
+        """Move module at addr to position x relative to calibration offset.
 
-        Accepts an individual address and angle, or lists of both.
+        Accepts an individual address and position, or lists of both. If no
+        addresses are provided, all initilized addresses will be used.
         """
+        if len(args) == 1:
+            addrs = self.addrs
+            xs = args[0]
+        elif len(args) == 2:
+            addrs = args[0]
+            xs = args[1]
+        else:
+            raise TypeError("Too many arguments")
         try:
-            for addr, angle in zip(addrs, angles):
-                self.moveabsolute(addr, self.zero[addr] + angle)
+            for addr, x in zip(addrs, xs):
+                self.moveabsolute(addr, self.zero[addr] + x)
         except TypeError:
-            self.moveabsolute(addrs, self.zero[addrs] + angles)
+            self.moveabsolute(addrs, self.zero[addrs] + xs)
