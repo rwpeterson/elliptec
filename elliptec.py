@@ -243,7 +243,8 @@ class Elliptec:
 
     def parsestatus(self, status):
         """Convert return string for comparison to status constants."""
-        return int(status[3:5])
+        if status[1:3] == "GS":
+            return int(status[3:5], 16)
 
     def changeaddress(self, addr, naddr):
         """Change address of module at addr to naddr.
