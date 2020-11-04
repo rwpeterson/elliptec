@@ -2,6 +2,7 @@
 
 import io
 import serial
+from time import sleep
 
 # Error codes for controller
 OK = 0
@@ -433,6 +434,23 @@ class Elliptec:
         Accepts an individual address and position, or lists of both. If no
         addresses are provided, all initilized addresses will be used.
         """
+        # Note: When in a fast loop sending successive commands, it is
+        #       possible for the modules to become confused and not
+        #       receive commands propery. Without the 1 ms sleep here,
+        #       in a test configuration of three ELL14s, some modules
+        #       would repeatably not reposond:
+        #
+        # - Initialize each module (with homing)
+        # e = Elliptec("COM3", ['0','1','2'])
+        #
+        # - Move to 180 degrees (all modules comply)
+        # e.calmove([180, 180, 180])
+        #
+        # - Move to 360 degrees (module 1 never complies, but 0 and 2 do)
+        # e.calmove([305, 350, 350])
+        #
+        # This was tested for 1, 0.1, 0.01, and 0.001 sec delays, all of
+        # which were successful
         if len(args) == 1:
             addrs = self.addrs
             xs = args[0]
@@ -444,5 +462,6 @@ class Elliptec:
         try:
             for addr, x in zip(addrs, xs):
                 self.moveabsolute(addr, self.zero[addr] + x)
+                sleep(0.001)
         except TypeError:
             self.moveabsolute(addrs, self.zero[addrs] + xs)
