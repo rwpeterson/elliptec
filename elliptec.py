@@ -24,6 +24,11 @@ GENERAL_ERROR = 14
 CW = 0
 CCW = 0
 
+# device ids by movement type
+movtype = {"linear": [7, 10, 17, 20],
+           "rotary": [8, 14, 18],
+           "indexed": [6,9]}
+
 
 class Error(Exception):
     """Base class."""
