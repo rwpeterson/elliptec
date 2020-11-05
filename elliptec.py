@@ -1,6 +1,5 @@
 """Communicate with a Thorlabs elliptec controller."""
 
-import io
 import serial
 from time import sleep
 
@@ -85,7 +84,6 @@ class Elliptec:
     def __init__(self, dev, addrs, home=True, freq=True, freqSave=False):
         """Initialize communication with controller and home all modules."""
         self.openserial(dev)
-        self.openbuffer()
         # info: module/motor info received during init
         self.info = dict()
         # zero: per-module user calibration offset
@@ -110,7 +108,7 @@ class Elliptec:
                 # datum for subsequent moving
                 if home:
                     self.home(addr)
-        self.ser.timeout = 1
+        self.ser.timeout = 2
 
     def handler(self, retval):
         """Process replies from modules.
@@ -123,9 +121,8 @@ class Elliptec:
     def _readmsgs(self, count):
         """Collect the expected number of replies from the modules."""
         msgs = []
-        self.sio.flush()
         for i in range(count):
-            msgs.append(self.sio.readline())
+            msgs.append(self.ser.readline())
         return msgs
 
     def openserial(self, dev):
@@ -135,12 +132,7 @@ class Elliptec:
                                  bytesize=serial.EIGHTBITS,
                                  parity=serial.PARITY_NONE,
                                  stopbits=serial.STOPBITS_ONE,
-                                 timeout=1)
-
-    def openbuffer(self):
-        """Open io buffer wrapping serial connection."""
-        self.sio = io.TextIOWrapper(io.BufferedRWPair(self.ser, self.ser),
-                                    newline='\r\n')
+                                 timeout=2)
 
     def close(self):
         """Shut down the buffer and serial connection cleanly."""
@@ -150,14 +142,13 @@ class Elliptec:
 
     def bufmsg(self, msg):
         """Send message to module and wait on readline() for a response."""
-        self.sio.write(msg)
-        self.sio.flush()
-        return self.sio.readline()
+        self.ser.write(msg.encode())
+        retval = self.ser.readline().decode()
+        return retval
 
     def _sndmsg(self, msg):
         """Send message to module without waiting for a response."""
-        self.sio.write(msg)
-        self.sio.flush()
+        self.ser.write(msg)
 
     def msg(self, addr, msg):
         """Send message to module, handling reply according to hmode."""
