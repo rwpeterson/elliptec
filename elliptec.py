@@ -395,6 +395,17 @@ class Elliptec:
         hstep = self.step2hex(step)
         return self.handler(self.msg(addr, 'ma' + hstep))
 
+    def moverelative(self, addr, delta):
+        """Move motor relative to current position."""
+        if self.info[addr]["partnumber"] in modtype["rotary"]:
+            step = self.deg2step(addr, delta)
+        elif self.info[addr]["partnumber"] in modtype["linear"]:
+            step = self.mm2step(addr, delta)
+        else:
+            raise ModuleError
+        hstep = self.step2hex(step)
+        return self.handler(self.msg(addr, 'mr' + hstep))
+
     def setcal(self, *args):
         """Set a calibration offset for modules `addrs` to `xs`.
 
