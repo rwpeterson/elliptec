@@ -121,7 +121,15 @@ class Elliptec:
         """Collect the expected number of replies from the modules."""
         msgs = []
         for i in range(count):
-            msgs.append(self.ser.readline())
+            msgs.append(self.ser.readline().decode())
+        return msgs
+
+    def clearmsgs(self):
+        """Clear message backlog until serial timeout is reached."""
+        retval = ''
+        msgs = []
+        while not retval:
+            msgs.append(self.ser.readline().decode())
         return msgs
 
     def openserial(self, dev):
