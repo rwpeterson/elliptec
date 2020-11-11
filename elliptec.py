@@ -377,11 +377,11 @@ class Elliptec:
 
     def pos2deg(self, addr, retval):
         """Convert pos retval to degrees using queried scale factor."""
-        return self.step2deg(self.hex2step(retval[3:11]))
+        return self.step2deg(addr, self.hex2step(retval[3:11]))
 
     def pos2mm(self, addr, retval):
         """Convert pos retval to mm using queried scale factor."""
-        return self.step2mm(self.hex2step(retval[3:11]))
+        return self.step2mm(addr, self.hex2step(retval[3:11]))
 
     def home(self, addr, direction=CCW):
         """Move motor to home position.
