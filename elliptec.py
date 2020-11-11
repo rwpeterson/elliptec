@@ -39,6 +39,10 @@ errmsg = {0: "OK, no error",
 CW = 0
 CCW = 0
 
+# Acceptable accuracy
+DEGERR = 0.1
+MMERR = 0.05
+
 # Device ids by module type
 modtype = {"linear": [7, 10, 17, 20],
            "rotary": [8, 14, 18],
@@ -240,10 +244,16 @@ class Elliptec:
         """Get module status/error value and clear error."""
         return self.handler(self.msg(addr, 'gs'))
 
-    def parsestatus(self, status):
-        """Convert return string for comparison to status constants."""
-        if status[1:3] == "GS":
-            return int(status[3:5], 16)
+    def isstatus(self, retval):
+        """Check if retval is a status code."""
+        if retval[1:3] == "GS":
+            return True
+        else:
+            return False
+
+    def parsestatus(self, retval):
+        """Convert status retval for comparison to status constants."""
+        return int(retval[3:5], 16)
 
     def changeaddress(self, addr, naddr):
         """Change address of module at addr to naddr.
@@ -429,8 +439,8 @@ class Elliptec:
             step += 1 << 32
         return hex(step)[2:].zfill(8).upper()
 
-    def moveabsolute(self, addr, pos):
-        """Move motor to specified absolute position."""
+    def _moveabsolute(self, addr, pos):
+        """Move motor to specified absolute position (dumb version)."""
         if self.info[addr]["partnumber"] in modtype["rotary"]:
             step = self.deg2step(addr, pos)
         elif self.info[addr]["partnumber"] in modtype["linear"]:
@@ -439,6 +449,41 @@ class Elliptec:
             raise ModuleError
         hstep = self.step2hex(step)
         return self.handler(self.msg(addr, 'ma' + hstep))
+
+    def moveabsolute(self, addr, pos, depth=1):
+        """Move motor to specified absolute position."""
+        if self.info[addr]["partnumber"] in modtype["rotary"]:
+            step = self.deg2step(addr, pos)
+        elif self.info[addr]["partnumber"] in modtype["linear"]:
+            step = self.mm2step(addr, pos)
+        else:
+            raise ModuleError
+        hstep = self.step2hex(step)
+        ret = self.handler(self.msg(addr, 'ma' + hstep))
+        # Command was not received, need to retry
+        if ret == "":
+            # Eventually give up
+            if depth > 5:
+                raise ReportedError("Command unsuccessful after 5 tries")
+            else:
+                return self.moveabsolute(addr, pos, depth=(depth + 1))
+        # Check reported position and retry if not within error
+        elif self.ispos(ret) and (ret[0] == addr):
+            if self.info[addr]["partnumber"] in modtype["rotary"]:
+                if self.pos2deg(addr, ret) > DEGERR:
+                    return self.moveabsolute(addr, pos, depth=(depth + 1))
+                else:
+                    return ret
+            else:
+                if self.pos2mm(addr, ret) > MMERR:
+                    return self.moveabsolute(addr, pos, depth=(depth + 1))
+                else:
+                    return ret
+        # Pass on a reported error
+        elif self.isstatus(ret):
+            raise ReportedError(errmsg[self.parsestatus(ret)])
+        else:
+            raise Error("moveabsolute unsuccessful")
 
     def moverelative(self, addr, delta):
         """Move motor relative to current position."""
