@@ -358,6 +358,21 @@ class Elliptec:
         """Request current motor position."""
         return self.handler(self.msg(addr, 'gp'))
 
+    def ispos(self, ret):
+        """Check if return string is position report."""
+        if ret[1:3] == "PO":
+            return True
+        else:
+            return False
+
+    def pos2deg(self, addr, retval):
+        """Convert pos retval to degrees using queried scale factor."""
+        return self.step2deg(self.hex2step(retval[3:11]))
+
+    def pos2mm(self, addr, retval):
+        """Convert pos retval to mm using queried scale factor."""
+        return self.step2mm(self.hex2step(retval[3:11]))
+
     def home(self, addr, direction=CCW):
         """Move motor to home position.
 
@@ -377,19 +392,41 @@ class Elliptec:
             self.home(addr, direction)
 
     def deg2step(self, addr, deg):
-        """Use scaling factor queried from motor during init."""
+        """Convert degrees to steps using queried scale factor."""
         return int(deg * self.info[addr]["pulses"]/360)
 
+    def step2deg(self, addr, step):
+        """Convert steps to degrees using queried scale factor."""
+        return step * 360 / self.info[addr]["pulses"]
+
     def mm2step(self, addr, mm):
-        """Use scaling factor queried from motor during init."""
+        """Convert mm to steps using queried scale factor."""
         return int(mm * self.info[addr]["pulses"])
+
+    def step2mm(self, addr, step):
+        """Convert steps to mm using queried scale factor."""
+        return step / self.info[addr]["pulses"]
+
+    @staticmethod
+    def hex2step(x):
+        """Convert hex-encoded int32 to python int."""
+        if len(x) != 8:
+            raise ValueError
+        y = int(x, 16)
+        if y > 1 << (32 - 1):
+            y -= 1 << 32
+        return y
 
     @staticmethod
     def step2hex(step):
-        """Convert int to hex-encoded string understood by controller.
+        """Convert int32 to hex-encoded string understood by controller.
 
-        Note that [a-f] are NOT accepted as valed hex values.
+        Note that [a-f] are NOT accepted as valid hex values by the
+        module controllers. To make step2hex and hex2step bijective, we
+        consider negative values as well.
         """
+        if step < 0:
+            step += 1 << 32
         return hex(step)[2:].zfill(8).upper()
 
     def moveabsolute(self, addr, pos):
