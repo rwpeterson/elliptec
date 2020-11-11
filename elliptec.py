@@ -452,14 +452,7 @@ class Elliptec:
 
     def moveabsolute(self, addr, pos, depth=1):
         """Move motor to specified absolute position."""
-        if self.info[addr]["partnumber"] in modtype["rotary"]:
-            step = self.deg2step(addr, pos)
-        elif self.info[addr]["partnumber"] in modtype["linear"]:
-            step = self.mm2step(addr, pos)
-        else:
-            raise ModuleError
-        hstep = self.step2hex(step)
-        ret = self.handler(self.msg(addr, 'ma' + hstep))
+        ret = self._moveabsolute(addr, pos)
         # Command was not received, need to retry
         if ret == "":
             # Eventually give up
@@ -469,16 +462,19 @@ class Elliptec:
                 return self.moveabsolute(addr, pos, depth=(depth + 1))
         # Check reported position and retry if not within error
         elif self.ispos(ret) and (ret[0] == addr):
-            if self.info[addr]["partnumber"] in modtype["rotary"]:
-                if self.pos2deg(addr, ret) > DEGERR:
-                    return self.moveabsolute(addr, pos, depth=(depth + 1))
-                else:
-                    return ret
+            if depth > 5:
+                raise ReportedError("Command unsuccessful after 5 tries")
             else:
-                if self.pos2mm(addr, ret) > MMERR:
-                    return self.moveabsolute(addr, pos, depth=(depth + 1))
+                if self.info[addr]["partnumber"] in modtype["rotary"]:
+                    if abs(self.pos2deg(addr, ret) - pos) > DEGERR:
+                        return self.moveabsolute(addr, pos, depth=(depth + 1))
+                    else:
+                        return ret
                 else:
-                    return ret
+                    if abs(self.pos2mm(addr, ret) - pos) > MMERR:
+                        return self.moveabsolute(addr, pos, depth=(depth + 1))
+                    else:
+                        return ret
         # Pass on a reported error
         elif self.isstatus(ret):
             raise ReportedError(errmsg[self.parsestatus(ret)])
