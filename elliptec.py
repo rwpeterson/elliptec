@@ -535,7 +535,9 @@ class Elliptec:
         else:
             raise TypeError("Too many arguments")
         try:
+            ret = []
             for addr, x in zip(addrs, xs):
-                self.moveabsolute(addr, self.zero[addr] + x)
+                ret.append(self.moveabsolute(addr, self.zero[addr] + x))
+            return ret
         except TypeError:
             self.moveabsolute(addrs, self.zero[addrs] + xs)
