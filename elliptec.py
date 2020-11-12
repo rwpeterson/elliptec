@@ -84,13 +84,19 @@ class Elliptec:
     perform an intial homing.
     """
 
-    def __init__(self, dev, addrs, home=True, freq=True, freqSave=False):
+    def __init__(self,
+                 dev,
+                 addrs,
+                 home=True,
+                 freq=True,
+                 freqSave=False
+                 cal=dict()):
         """Initialize communication with controller and home all modules."""
         self.openserial(dev)
         # info: module/motor info received during init
         self.info = dict()
         # zero: per-module user calibration offset
-        self.zero = dict()
+        self.zero = cal
         self.ser.timeout = 6
         self.addrs = addrs
         for addr in addrs:
