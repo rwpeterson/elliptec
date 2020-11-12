@@ -89,7 +89,7 @@ class Elliptec:
                  addrs,
                  home=True,
                  freq=True,
-                 freqSave=False
+                 freqSave=False,
                  cal=dict()):
         """Initialize communication with controller and home all modules."""
         self.openserial(dev)
