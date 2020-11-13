@@ -537,7 +537,15 @@ class Elliptec:
         try:
             ret = []
             for addr, x in zip(addrs, xs):
-                ret.append(self.moveabsolute(addr, self.zero[addr] + x))
+                if self.info[addr]["partnumber"] in modtype["rotary"]:
+                    y = (self.zero[addr] + x) % 360
+                else:
+                    y = self.zero[addr] + x
+                ret.append(self.moveabsolute(addr, y))
             return ret
         except TypeError:
-            self.moveabsolute(addrs, self.zero[addrs] + xs)
+            if self.info[addr]["partnumber"] in modtype["rotary"]:
+                y = (self.zero[addr] + x) % 360
+            else:
+                y = self.zero[addr] + x
+            self.moveabsolute(addrs, y)
