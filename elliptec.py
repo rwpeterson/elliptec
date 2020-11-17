@@ -105,8 +105,6 @@ class Elliptec:
                 raise MissingModule("No module found at supplied address")
             else:
                 self.initinfo(addr, info)
-                # Also initialize the cal offset to zero
-                self.zero[addr] = 0
                 # The (second) initial frequency scan's result is not
                 # saved by default
                 if freq:
