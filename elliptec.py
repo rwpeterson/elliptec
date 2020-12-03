@@ -150,10 +150,9 @@ class Elliptec:
                                  stopbits=serial.STOPBITS_ONE,
                                  timeout=2)
         sleep(0.050)
-        ser.reset_input_buffer()
-        ser.reset_output_buffer()
+        self.ser.reset_input_buffer()
+        self.ser.reset_output_buffer()
         sleep(0.050)
-        return self.ser
 
     def close(self):
         """Shut down the buffer and serial connection cleanly."""
