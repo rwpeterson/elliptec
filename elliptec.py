@@ -1,6 +1,7 @@
 """Communicate with a Thorlabs elliptec controller."""
 
 import serial
+from time import sleep
 
 # Error codes for controller
 OK = 0
@@ -148,6 +149,11 @@ class Elliptec:
                                  parity=serial.PARITY_NONE,
                                  stopbits=serial.STOPBITS_ONE,
                                  timeout=2)
+        sleep(0.050)
+        ser.reset_input_buffer()
+        ser.reset_output_buffer()
+        sleep(0.050)
+        return self.ser
 
     def close(self):
         """Shut down the buffer and serial connection cleanly."""
