@@ -116,6 +116,9 @@ class Elliptec:
                 # datum for subsequent moving
                 if home:
                     self.home(addr)
+                # Initialize the calibration offset if none is provided
+                if not cal:
+                    self.zero[addr] = 0
         self.ser.timeout = 2
 
     def handler(self, retval):
