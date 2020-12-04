@@ -1,5 +1,6 @@
 """Communicate with a Thorlabs elliptec controller."""
 
+import io
 import serial
 from time import sleep
 
@@ -146,16 +147,9 @@ class Elliptec:
 
     def openserial(self, dev):
         """Open serial connection."""
-        self.ser = serial.Serial(dev,
-                                 9600,
-                                 bytesize=serial.EIGHTBITS,
-                                 parity=serial.PARITY_NONE,
-                                 stopbits=serial.STOPBITS_ONE,
-                                 timeout=2)
-        sleep(0.050)
-        self.ser.reset_input_buffer()
-        self.ser.reset_output_buffer()
-        sleep(0.050)
+        self.ser = serial.serial_for_url(dev, timeout=2)
+        self.sio = io.TextIOWrapper(io.BufferedRWPair(self.ser, self.ser),
+                                    newline='\r\n')
 
     def close(self):
         """Shut down the buffer and serial connection cleanly."""
@@ -165,16 +159,29 @@ class Elliptec:
 
     def bufmsg(self, msg):
         """Send message to module and wait on readline() for a response."""
-        self.ser.write(msg.encode())
-        retval = self.ser.readline().decode()
+        self._sndmsg(msg)
+        retval = self.sio.readline()
         return retval
 
     def _sndmsg(self, msg):
         """Send message to module without waiting for a response."""
-        self.ser.write(msg)
+        # Cursed hack for some modules which reliably do no receive
+        # certain valid messages. Yes, it works.
+        for char in msg:
+            sleep(0.001)
+            self.sio.write(char)
+            self.sio.flush()
+
+    def _interceptcmd(self, function, args):
+        """Print the command that would be sent via serial."""
+        tmpsio = self.sio
+        self.sio = Dummysio()
+        retval = function(*args)
+        self.sio = tmpsio
+        return retval
 
     def msg(self, addr, msg):
-        """Send message to module, handling reply according to hmode."""
+        """Send message to module."""
         addr = str(int(addr, 16))
         return self.bufmsg(addr + msg)
 
@@ -555,3 +562,16 @@ class Elliptec:
             else:
                 y = self.zero[addr] + x
             self.moveabsolute(addrs, y)
+
+
+class Dummysio():
+    """Create dummy io object to catch commands and return them."""
+
+    def write(self, msg):
+        self.lastmsg = msg
+
+    def flush(self):
+        pass
+
+    def readline(self):
+        return self.lastmsg
