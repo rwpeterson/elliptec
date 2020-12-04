@@ -106,6 +106,8 @@ class Elliptec:
         self.info = dict()
         # zero: per-module user calibration offset
         self.zero = cal
+        if not cal:
+            dozero = True
         # Collect soft errors ("flags") when it's possible to retry a
         # command, for printing if eventually unsuccessful
         self.flags = []
@@ -128,7 +130,7 @@ class Elliptec:
                 if home:
                     self.home(addr)
                 # Initialize the calibration offset if none is provided
-                if not cal:
+                if dozero:
                     self.zero[addr] = 0
         self.ser.timeout = 2
 
