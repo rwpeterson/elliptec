@@ -4,7 +4,7 @@ import io
 import serial
 from time import sleep
 
-# Error codes for controller
+# Protocol-defined error codes, received from modules
 OK = 0
 COMM_TIMEOUT = 1
 MECH_TIMEOUT = 2
@@ -36,6 +36,13 @@ errmsg = {0: "OK, no error",
           12: "Out of range",
           13: "Over current error",
           14: "Reserved"}
+
+# Error flags internal to this code
+CMD_NOT_RCVD = 1
+POS_ERROR = 2
+
+flagmsg = {1: "Command was not received by controller; no reply",
+           2: "Reported position error greater than MMERR/DEGERR"}
 
 # Direction constants
 CW = 0
@@ -99,6 +106,9 @@ class Elliptec:
         self.info = dict()
         # zero: per-module user calibration offset
         self.zero = cal
+        # Collect soft errors ("flags") when it's possible to retry a
+        # command, for printing if eventually unsuccessful
+        self.flags = []
         self.ser.timeout = 6
         self.addrs = addrs
         for addr in addrs:
@@ -472,28 +482,30 @@ class Elliptec:
     def moveabsolute(self, addr, pos, depth=1):
         """Move motor to specified absolute position."""
         ret = self._moveabsolute(addr, pos)
+        # Check if we should give up
+        if depth > 5:
+            errstr = "Moveabsolute unsuccessful after 5 tries:\n"
+            for flag in self.flags:
+                errstr += " " + flagmsg[flag] + "\n"
+            raise ReportedError(errstr)
         # Command was not received, need to retry
         if ret == "":
-            # Eventually give up
-            if depth > 5:
-                raise ReportedError("Command unsuccessful after 5 tries")
-            else:
-                return self.moveabsolute(addr, pos, depth=(depth + 1))
+            self.flags.append(CMD_NOT_RCVD)
+            return self.moveabsolute(addr, pos, depth=(depth + 1))
         # Check reported position and retry if not within error
         elif self.ispos(ret) and (ret[0] == addr):
-            if depth > 5:
-                raise ReportedError("Command unsuccessful after 5 tries")
-            else:
-                if self.info[addr]["partnumber"] in modtype["rotary"]:
-                    if abs(self.pos2deg(addr, ret) - pos) > DEGERR:
-                        return self.moveabsolute(addr, pos, depth=(depth + 1))
-                    else:
-                        return ret
+            if self.info[addr]["partnumber"] in modtype["rotary"]:
+                if abs(self.pos2deg(addr, ret) - pos) > DEGERR:
+                    self.flags.append(POS_ERROR)
+                    return self.moveabsolute(addr, pos, depth=(depth + 1))
                 else:
-                    if abs(self.pos2mm(addr, ret) - pos) > MMERR:
-                        return self.moveabsolute(addr, pos, depth=(depth + 1))
-                    else:
-                        return ret
+                    return ret
+            else:
+                if abs(self.pos2mm(addr, ret) - pos) > MMERR:
+                    self.flags.append(POS_ERROR)
+                    return self.moveabsolute(addr, pos, depth=(depth + 1))
+                else:
+                    return ret
         # Pass on a reported error
         elif self.isstatus(ret):
             raise ReportedError(errmsg[self.parsestatus(ret)])
