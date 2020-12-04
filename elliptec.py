@@ -187,7 +187,7 @@ class Elliptec:
     def _interceptcmd(self, function, args):
         """Print the command that would be sent via serial."""
         tmpsio = self.sio
-        self.sio = Dummysio()
+        self.sio = Dummyio()
         retval = function(*args)
         self.sio = tmpsio
         return retval
@@ -578,14 +578,17 @@ class Elliptec:
             self.moveabsolute(addrs, y)
 
 
-class Dummysio():
-    """Create dummy io object to catch commands and return them."""
+class Dummyio():
+    """Dummy io object to intercept writes and return them via readline."""
 
     def write(self, msg):
+        """Store the message instead of writing it to io."""
         self.lastmsg = msg
 
     def flush(self):
+        """No-op to fake being io object."""
         pass
 
     def readline(self):
+        """Return the stored message that was intercepted."""
         return self.lastmsg
