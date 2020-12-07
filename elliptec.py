@@ -111,6 +111,7 @@ class Elliptec:
             dozero = True
         else:
             dozero = False
+        self.slow_write = slow_write
         # Collect soft errors ("flags") when it's possible to retry a
         # command, for printing if eventually unsuccessful
         self.flags = []
