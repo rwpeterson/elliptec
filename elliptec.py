@@ -108,6 +108,8 @@ class Elliptec:
         self.zero = cal
         if not cal:
             dozero = True
+        else:
+            dozero = False
         # Collect soft errors ("flags") when it's possible to retry a
         # command, for printing if eventually unsuccessful
         self.flags = []
