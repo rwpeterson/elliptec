@@ -189,7 +189,7 @@ class Elliptec:
                 self.sio.write(char)
                 self.sio.flush()
         else:
-            self.sio.write(char)
+            self.sio.write(msg)
             self.sio.flush()
 
     def _interceptcmd(self, function, args):
