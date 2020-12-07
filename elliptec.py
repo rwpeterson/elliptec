@@ -99,7 +99,8 @@ class Elliptec:
                  home=True,
                  freq=True,
                  freqSave=False,
-                 cal=dict()):
+                 cal=dict(),
+                 slow_write=False):
         """Initialize communication with controller and home all modules."""
         self.openserial(dev)
         # info: module/motor info received during init
@@ -181,8 +182,12 @@ class Elliptec:
         """Send message to module without waiting for a response."""
         # Cursed hack for some modules which reliably do no receive
         # certain valid messages. Yes, it works.
-        for char in msg:
-            sleep(0.001)
+        if self.slow_write:
+            for char in msg:
+                sleep(0.001)
+                self.sio.write(char)
+                self.sio.flush()
+        else:
             self.sio.write(char)
             self.sio.flush()
 
