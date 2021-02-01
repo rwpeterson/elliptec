@@ -5,7 +5,7 @@ with open("README.md", "r") as readme:
 
 setuptools.setup(
     name="elliptec",
-    version="0.1.0",
+    version="0.2.0",
     license="MIT",
     author="Bob Peterson",
     author_email="bob@rwp.is",
@@ -15,7 +15,7 @@ setuptools.setup(
     url="https://git.sr.ht/~rwp/elliptec",
     packages=setuptools.find_packages(),
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
