@@ -501,6 +501,9 @@ class Elliptec:
         # Command was not received, need to retry
         if ret == "":
             self.flags.append(CMD_NOT_RCVD)
+            # If valid message was sent but no reply was received, we
+            # need to use slow_write for module to hear us
+            self.slow_write = True
             return self.moveabsolute(addr, pos, depth=(depth + 1))
         # Check reported position and retry if not within error
         elif self.ispos(ret) and (ret[0] == addr):
