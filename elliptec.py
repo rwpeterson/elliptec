@@ -21,28 +21,28 @@ OUT_OF_RANGE = 12
 OVER_CURRENT = 13
 GENERAL_ERROR = 14
 
-errmsg = {0: "OK, no error",
-          1: "Communication timeout",
-          2: "Mechanical timeout",
-          3: "Command error or not supported",
-          4: "Value out of range",
-          5: "Module isolated",
-          6: "Module out of isolation",
-          7: "Initializing error",
-          8: "Thermal error",
-          9: "Busy",
-          10: "Sensor error",
-          11: "Motor error",
-          12: "Out of range",
-          13: "Over current error",
-          14: "Reserved"}
+errmsg = {OK: "OK, no error",
+          COMM_TIMEOUT: "Communication timeout",
+          MECH_TIMEOUT: "Mechanical timeout",
+          COMMAND_ERR: "Command error or not supported",
+          VAL_OUT_OF_RANGE: "Value out of range",
+          MOD_ISOLATED: "Module isolated",
+          MOD_OUT_OF_ISOL: "Module out of isolation",
+          INIT_ERROR: "Initializing error",
+          THERMAL_ERROR: "Thermal error",
+          BUSY: "Busy",
+          SENSOR_ERROR: "Sensor error",
+          MOTOR_ERROR: "Motor error",
+          OUT_OF_RANGE: "Out of range",
+          OVER_CURRENT: "Over current error",
+          GENERAL_ERROR: "Reserved"}
 
 # Error flags internal to this code
 CMD_NOT_RCVD = 1
 POS_ERROR = 2
 
-flagmsg = {1: "Command was not received by controller; no reply",
-           2: "Reported position error greater than MMERR/DEGERR"}
+flagmsg = {CMD_NOT_RCVD: "Command was not received by controller; no reply",
+           POS_ERROR: "Reported position error greater than MMERR/DEGERR"}
 
 # Direction constants
 CW = 0
