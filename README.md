@@ -14,7 +14,7 @@ affords some conveniences, such as:
 - Keep track of per-module offsets, e.g. to rotate relative to a
   calibrated angle for a waveplate
 
-# Getting started
+## Getting started
 
 ```python
 from elliptec import Elliptec
