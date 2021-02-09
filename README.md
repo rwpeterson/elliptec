@@ -47,6 +47,20 @@ e.calmove([0, 45, -22.5])
 e.close()
 ```
 
+## Installing / Developing
+
+This project is currently not packaged on PyPI. The easiest way
+to install is to clone the repo and install the local version in
+editable mode with `pip`:
+
+    git clone https://git.sr.ht/~rwp/elliptec
+    cd elliptec
+    pip3 install -e .
+
+Now, any changes you make locally will automatically be applied in your
+scripts. To update to a newer version, use `git` to pull changes as
+usual into your local repo.
+
 ## Scope
 
 Contributors currently have only used this to control the ELL14
