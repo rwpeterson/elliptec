@@ -5,7 +5,7 @@ with open("README.md", "r") as readme:
 
 setuptools.setup(
     name="elliptec",
-    version="0.2.0",
+    version="0.2.1",
     license="MIT",
     author="Bob Peterson",
     author_email="bob@rwp.is",
