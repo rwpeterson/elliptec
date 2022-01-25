@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.egg-info
+dist/
 
 .ipynb_checkpoints
 profile_default/
