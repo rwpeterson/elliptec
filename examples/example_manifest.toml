@@ -1,0 +1,57 @@
+# Element manifest
+#
+# The manifest is designed to help manage experiments with many motorized mounts,
+# By indexing with a short, unique name, we can abstract over the implementation
+# details of control code in many cases, and support extending this format to other
+# types of elements that might speak different protocols or have different relevant
+# calibration data.
+# control code. The format is designed to easily extend to other types of elements
+# that need to be managed by control code: the "control" key contains type-specific
+# information needed for control, e.g. serial id and address for elliptec mounts,
+# and the "data" key 
+# and so on.
+#
+# Required keys:
+#   name: String, short unique identifier
+#   type: String, motor type
+#   control: Table, info needed for computer control, type-dependent
+#   data: Table, info that can be used in control (like calibration offset),
+#       as well as other data useful to downstream consumers, type-dependent
+#
+# Optional keys:
+#   description: String, additional information like part number of optic, etc.
+#
+# Supported types:
+#   rot:
+#       ELL14 - rotation mount
+#   stage28:
+#       ELL17 - 28 mm travel linear stage
+#   stage60:
+#       ELL20 - 60 mm travel linear stage
+#
+# For all elliptec types (rot, stage28, stage60), the control table must specify
+# controller_id and address. For "rot", if the data table specifies fast_axis,
+# slow_axis, or zero_axis, this will be used as an offset for received commands.
+# While controller_id can ideally be the unique serial id of the controller,
+# as is provided by udev, it could also be COM1, etc. as on Windows.
+
+
+[[elements]]
+name = "hwp_4"
+description = "WPH10M-1550"
+type = "rot"
+[elements.control]
+controller_id = "/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DT042OHB-if00-port0"
+address = "0"
+[elements.data]
+fast_axis = 123.45   # used as offset, e.g. "go to 90 degrees" will go to 90 + 123.45 degrees
+fast_axis_err = 0.67 # not used by control code but later analysis may need to consider the error
+
+[[elements]]
+name = "linear_1"
+description = "H-polarizer"
+type = "stage60"
+[elements.control]
+controller_id = "/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DT042OHB-if00-port0"
+address = "F"
+[elements.data] # currently no relevant data
