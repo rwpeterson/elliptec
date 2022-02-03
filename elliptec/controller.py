@@ -46,7 +46,7 @@ flagmsg = {CMD_NOT_RCVD: "Command was not received by controller; no reply",
 
 # Direction constants
 CW = 0
-CCW = 0
+CCW = 1
 
 # Acceptable accuracy
 DEGERR = 0.1
