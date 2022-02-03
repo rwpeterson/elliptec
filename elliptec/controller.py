@@ -116,11 +116,13 @@ class Elliptec:
         # command, for printing if eventually unsuccessful
         self.flags = []
         self.ser.timeout = 6
-        self.addrs = addrs
+        # Sorting fixes a bug where some misbehaving modules do not reply to
+        # the information query during initialization.
+        self.addrs = addrs.sorted()
         for addr in addrs:
             info = self.information(addr)
             if not info:
-                raise MissingModule("No module found at supplied address")
+                raise MissingModule(f"Address {addr}: no module found or it failed to reply")
             else:
                 self.initinfo(addr, info)
                 # The (second) initial frequency scan's result is not
