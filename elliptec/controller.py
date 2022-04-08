@@ -21,28 +21,32 @@ OUT_OF_RANGE = 12
 OVER_CURRENT = 13
 GENERAL_ERROR = 14
 
-errmsg = {OK: "OK, no error",
-          COMM_TIMEOUT: "Communication timeout",
-          MECH_TIMEOUT: "Mechanical timeout",
-          COMMAND_ERR: "Command error or not supported",
-          VAL_OUT_OF_RANGE: "Value out of range",
-          MOD_ISOLATED: "Module isolated",
-          MOD_OUT_OF_ISOL: "Module out of isolation",
-          INIT_ERROR: "Initializing error",
-          THERMAL_ERROR: "Thermal error",
-          BUSY: "Busy",
-          SENSOR_ERROR: "Sensor error",
-          MOTOR_ERROR: "Motor error",
-          OUT_OF_RANGE: "Out of range",
-          OVER_CURRENT: "Over current error",
-          GENERAL_ERROR: "Reserved"}
+errmsg = {
+    OK: "OK, no error",
+    COMM_TIMEOUT: "Communication timeout",
+    MECH_TIMEOUT: "Mechanical timeout",
+    COMMAND_ERR: "Command error or not supported",
+    VAL_OUT_OF_RANGE: "Value out of range",
+    MOD_ISOLATED: "Module isolated",
+    MOD_OUT_OF_ISOL: "Module out of isolation",
+    INIT_ERROR: "Initializing error",
+    THERMAL_ERROR: "Thermal error",
+    BUSY: "Busy",
+    SENSOR_ERROR: "Sensor error",
+    MOTOR_ERROR: "Motor error",
+    OUT_OF_RANGE: "Out of range",
+    OVER_CURRENT: "Over current error",
+    GENERAL_ERROR: "Reserved",
+}
 
 # Error flags internal to this code
 CMD_NOT_RCVD = 1
 POS_ERROR = 2
 
-flagmsg = {CMD_NOT_RCVD: "Command was not received by controller; no reply",
-           POS_ERROR: "Reported position error greater than MMERR/DEGERR"}
+flagmsg = {
+    CMD_NOT_RCVD: "Command was not received by controller; no reply",
+    POS_ERROR: "Reported position error greater than MMERR/DEGERR",
+}
 
 # Direction constants
 CW = 0
@@ -53,10 +57,12 @@ DEGERR = 0.1
 MMERR = 0.05
 
 # Device ids by module type
-modtype = {"linear": [7, 10, 17, 20],
-           "rotary": [8, 14, 18],
-           "indexed": [6, 9, 12],
-           "optclean": [14, 17, 18, 20]}
+modtype = {
+    "linear": [7, 10, 17, 20],
+    "rotary": [8, 14, 18],
+    "indexed": [6, 9, 12],
+    "optclean": [14, 17, 18, 20],
+}
 # Linear plus rotary stages have same home cmd, same number of motors
 modtype["linrot"] = modtype["linear"] + modtype["rotary"]
 
@@ -93,14 +99,16 @@ class Elliptec:
     perform an intial homing.
     """
 
-    def __init__(self,
-                 dev,
-                 addrs,
-                 home=True,
-                 freq=True,
-                 freqSave=False,
-                 cal=dict(),
-                 slow_write=False):
+    def __init__(
+        self,
+        dev,
+        addrs,
+        home=True,
+        freq=True,
+        freqSave=False,
+        cal=dict(),
+        slow_write=False,
+    ):
         """Initialize communication with controller and home all modules."""
         self.openserial(dev)
         # info: module/motor info received during init
@@ -123,7 +131,9 @@ class Elliptec:
         for addr in addrs:
             info = self.information(addr)
             if not info:
-                raise MissingModule(f"Address {addr}: no module found or it failed to reply")
+                raise MissingModule(
+                    f"Address {addr}: no module found or it failed to reply"
+                )
             else:
                 self.initinfo(addr, info)
                 # The (second) initial frequency scan's result is not
@@ -166,7 +176,7 @@ class Elliptec:
 
     def clearmsgs(self):
         """Clear message backlog until serial timeout is reached."""
-        retval = ''
+        retval = ""
         msgs = []
         while not retval:
             msgs.append(self.ser.readline().decode())
@@ -175,8 +185,9 @@ class Elliptec:
     def openserial(self, dev):
         """Open serial connection."""
         self.ser = serial.serial_for_url(dev, timeout=2)
-        self.sio = io.TextIOWrapper(io.BufferedRWPair(self.ser, self.ser),
-                                    newline='\r\n')
+        self.sio = io.TextIOWrapper(
+            io.BufferedRWPair(self.ser, self.ser), newline="\r\n"
+        )
 
     def close(self):
         """Shut down the buffer and serial connection cleanly."""
@@ -235,7 +246,7 @@ class Elliptec:
             TRAVEL - travel in mm/deg
             PULSES - pulses per measurement unit
         """
-        return self.handler(self.msg(addr, 'in'))
+        return self.handler(self.msg(addr, "in"))
 
     def initinfo(self, addr, info):
         """Parse and store module information string."""
@@ -267,14 +278,14 @@ class Elliptec:
         BAKPER - backward period value
         period value - 14,740,000/frequency
         """
-        return self.handler(self.msg(addr, 'i1'))
+        return self.handler(self.msg(addr, "i1"))
 
     def motor2info(self, addr):
         """Get motor 2 parameters from module.
 
         Only applies for devices which have two motors.
         """
-        return self.handler(self.msg(addr, 'i2'))
+        return self.handler(self.msg(addr, "i2"))
 
     def storemotorinfo(self, addr, num, m):
         """Parse and store motor info for motor `num`."""
@@ -285,14 +296,12 @@ class Elliptec:
         self.info[addr][num]["current"] = int(m.strip()[5:9], 16) / 1866
         self.info[addr][num]["rampup"] = int(m.strip()[9:13], 16)
         self.info[addr][num]["rampdown"] = int(m.strip()[13:17], 16)
-        self.info[addr][num]["forwardperiod"] = \
-            14740000 / int(m.strip()[17:21], 16)
-        self.info[addr][num]["backwardperiod"] = \
-            14740000 / int(m.strip()[21:25], 16)
+        self.info[addr][num]["forwardperiod"] = 14740000 / int(m.strip()[17:21], 16)
+        self.info[addr][num]["backwardperiod"] = 14740000 / int(m.strip()[21:25], 16)
 
     def status(self, addr):
         """Get module status/error value and clear error."""
-        return self.handler(self.msg(addr, 'gs'))
+        return self.handler(self.msg(addr, "gs"))
 
     def isstatus(self, retval):
         """Check if retval is a status code."""
@@ -310,14 +319,14 @@ class Elliptec:
 
         Expected reply: GS00 from new address.
         """
-        return self.handler(self.msg(addr, 'ca' + naddr))
+        return self.handler(self.msg(addr, "ca" + naddr))
 
     def saveuserdata(self, addr):
         """Instruct device to save motor parameters.
 
         Required for persistent custom frequencies or addresses.
         """
-        return self.handler(self.msg(addr, 'us'))
+        return self.handler(self.msg(addr, "us"))
 
     def changeaddress(self, addr, naddr):
         """Persistently change address of module at addr to newaddr.
@@ -337,7 +346,7 @@ class Elliptec:
         from multiple devices are ordered by their address, with 0x0
         having priority.
         """
-        return self.handler(self.msg(addr, 'ga' + gaddr))
+        return self.handler(self.msg(addr, "ga" + gaddr))
 
     def cleanmechanics(self, addr):
         """Perform cleaning cycle on module (blocking).
@@ -350,7 +359,7 @@ class Elliptec:
         if self.info[addr]["partnumber"] in modtype["optclean"]:
             oto = self.ser.timeout
             self.ser.timeout = 0
-            retval = self.msg(addr, 'cm')
+            retval = self.msg(addr, "cm")
             self.ser.timeout = oto
             return self.handler(retval)
         else:
@@ -367,7 +376,7 @@ class Elliptec:
         if self.info[addr]["partnumber"] in modtype["optclean"]:
             oto = self.ser.timeout
             self.ser.timeout = 0
-            retval = self.msg(addr, 'om')
+            retval = self.msg(addr, "om")
             self.ser.timeout = oto
             return self.handler(retval)
         else:
@@ -380,21 +389,21 @@ class Elliptec:
         """
         addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["optclean"]:
-            return self.handler(self.msg(addr, 'st'))
+            return self.handler(self.msg(addr, "st"))
         else:
             raise ModuleError("Command not supported for this module")
 
     def searchfreq1(self, addr):
         """Scan and optimize resonant frequency of motor 1."""
-        return self.handler(self.msg(addr, 's1'))
+        return self.handler(self.msg(addr, "s1"))
 
     def searchfreq2(self, addr):
         """Scan and optimize resonant frequency of motor 2."""
-        return self.handler(self.msg(addr, 's2'))
+        return self.handler(self.msg(addr, "s2"))
 
     def searchfreq3(self, addr):
         """Scan and optimize resonant frequency of motor 3."""
-        return self.handler(self.msg(addr, 's3'))
+        return self.handler(self.msg(addr, "s3"))
 
     def searchfreq(self, addr):
         """Scan and optimize resonant frequencies of all motors."""
@@ -421,15 +430,15 @@ class Elliptec:
               for a convenient way to set an arbitrary offset for
               successive movements.
         """
-        return self.handler(self.msg(addr, 'go'))
+        return self.handler(self.msg(addr, "go"))
 
     def jogstep(self, addr):
         """Request jog length."""
-        return self.handler(self.msg(addr, 'gj'))
+        return self.handler(self.msg(addr, "gj"))
 
     def pos(self, addr):
         """Request current motor position."""
-        return self.handler(self.msg(addr, 'gp'))
+        return self.handler(self.msg(addr, "gp"))
 
     def ispos(self, ret):
         """Check if return string is position report."""
@@ -455,14 +464,14 @@ class Elliptec:
         addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["linrot"]:
             if direction == CW:
-                return self.handler(self.msg(addr, 'ho0'))
+                return self.handler(self.msg(addr, "ho0"))
             else:
-                return self.handler(self.msg(addr, 'ho1'))
+                return self.handler(self.msg(addr, "ho1"))
         elif self.info[addr]["partnumber"] in modtype["indexed"]:
             # These do not obey home
             return self.indexmove(addr, 0)
         else:
-            return self.handler(self.msg(addr, 'ho'))
+            return self.handler(self.msg(addr, "ho"))
 
     def homeall(self, direction=CCW):
         """Home all connected modules."""
@@ -472,7 +481,7 @@ class Elliptec:
     def deg2step(self, addr, deg):
         """Convert degrees to steps using queried scale factor."""
         addr = self.parseaddr(addr)
-        return int(deg * self.info[addr]["pulses"]/360)
+        return int(deg * self.info[addr]["pulses"] / 360)
 
     def step2deg(self, addr, step):
         """Convert steps to degrees using queried scale factor."""
@@ -486,7 +495,7 @@ class Elliptec:
 
     def idx2step(self, addr, idx):
         """Convert index to steps using ad-hoc index protocol.
-        
+
         The indexed shutter mounts have a pulses/M.U. of 0,
         and are instead moved with a raw moveabsolute call
         where the pulses are interpreted as millimeters,
@@ -565,7 +574,7 @@ class Elliptec:
         else:
             raise ModuleError
         hstep = self.step2hex(step)
-        return self.handler(self.msg(addr, 'ma' + hstep))
+        return self.handler(self.msg(addr, "ma" + hstep))
 
     def moveabsolute(self, addr, pos, depth=1):
         """Move motor to specified absolute position."""
@@ -617,7 +626,7 @@ class Elliptec:
         else:
             raise ModuleError
         hstep = self.step2hex(step)
-        return self.handler(self.msg(addr, 'mr' + hstep))
+        return self.handler(self.msg(addr, "mr" + hstep))
 
     def setcal(self, *args):
         """Set a calibration offset for modules `addrs` to `xs`.
@@ -677,8 +686,8 @@ class Elliptec:
 
     def indexmove(self, addr, idx):
         """Move to the specified index for shutter devices.
-     
-        Note that while these commands use 
+
+        Note that while these commands use
         """
         addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["indexed"]:
@@ -686,23 +695,29 @@ class Elliptec:
                 if idx in [0, 1]:
                     self._moveabsolute(addr, idx)
                 else:
-                    raise ModuleError(f"Index {idx} out of bounds for ELL{self.info[addr]['partnumber']} at address {addr}")
+                    raise ModuleError(
+                        f"Index {idx} out of bounds for ELL{self.info[addr]['partnumber']} at address {addr}"
+                    )
             if self.info[addr]["partnumber"] == 9:
                 if idx in [0, 1, 2, 3]:
                     self._moveabsolute(addr, idx)
                 else:
-                    raise ModuleError(f"Index {idx} out of bounds for ELL{self.info[addr]['partnumber']} at address {addr}")
+                    raise ModuleError(
+                        f"Index {idx} out of bounds for ELL{self.info[addr]['partnumber']} at address {addr}"
+                    )
             if self.info[addr]["partnumber"] == 12:
                 if idx in [0, 1, 2, 3, 4, 5]:
-                    # NOTICE: 
+                    # NOTICE:
                     self._moveabsolute(addr, idx)
                 else:
-                    raise ModuleError(f"Index {idx} out of bounds for ELL{self.info[addr]['partnumber']} at address {addr}")
+                    raise ModuleError(
+                        f"Index {idx} out of bounds for ELL{self.info[addr]['partnumber']} at address {addr}"
+                    )
         else:
             raise ModuleError("Not an indexed mount")
 
 
-class Dummyio():
+class Dummyio:
     """Dummy io object to intercept writes and return them via readline."""
 
     def write(self, msg):
