@@ -116,9 +116,9 @@ class Elliptec:
         # command, for printing if eventually unsuccessful
         self.flags = []
         self.ser.timeout = 6
+        self.addrs = [self.parseaddr(addr) for addr in addrs]
         # Sorting fixes a bug where some misbehaving modules do not reply to
-        # the information query during initialization.
-        self.addrs = addrs
+        # the information query during initialization on OSX.
         self.addrs.sort()
         for addr in addrs:
             info = self.information(addr)
@@ -140,6 +140,14 @@ class Elliptec:
                 if dozero:
                     self.zero[addr] = 0
         self.ser.timeout = 2
+
+    @staticmethod
+    def parseaddr(addr):
+        """Converts integer addresses to hex format supported by controller."""
+        if type(addr) is int:
+            return hex(addr)[2:].upper()
+        else:
+            return addr
 
     def handler(self, retval):
         """Process replies from modules.
@@ -203,6 +211,7 @@ class Elliptec:
 
     def msg(self, addr, msg):
         """Send message to module."""
+        addr = self.parseaddr(addr)
         addr = str(int(addr, 16))
         return self.bufmsg(addr + msg)
 
@@ -269,6 +278,7 @@ class Elliptec:
 
     def storemotorinfo(self, addr, num, m):
         """Parse and store motor info for motor `num`."""
+        addr = self.parseaddr(addr)
         self.info[addr][num] = dict()
         self.info[addr][num]["loop"] = int(m.strip()[3:4])
         self.info[addr][num]["motor"] = int(m.strip()[4:5])
@@ -336,6 +346,7 @@ class Elliptec:
               replying with busy. Other modules on the same bus may have
               performance affected during this time.
         """
+        addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["optclean"]:
             oto = self.ser.timeout
             self.ser.timeout = 0
@@ -352,6 +363,7 @@ class Elliptec:
               replying with busy. Other modules on the same bus may have
               performance affected during this time.
         """
+        addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["optclean"]:
             oto = self.ser.timeout
             self.ser.timeout = 0
@@ -366,6 +378,7 @@ class Elliptec:
 
         Note: Applies to ELL{14,17,18,20} devices only.
         """
+        addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["optclean"]:
             return self.handler(self.msg(addr, 'st'))
         else:
@@ -385,6 +398,7 @@ class Elliptec:
 
     def searchfreq(self, addr):
         """Scan and optimize resonant frequencies of all motors."""
+        addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["indexed"]:
             s1 = self.searchfreq1(addr)
             if s1 == MECH_TIMEOUT:
@@ -438,6 +452,7 @@ class Elliptec:
         For rotary stages, byte 3 sets direction: 0 CW and 1 CCW.
         For indexed stages, move to 0th position
         """
+        addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["linrot"]:
             if direction == CW:
                 return self.handler(self.msg(addr, 'ho0'))
@@ -456,14 +471,17 @@ class Elliptec:
 
     def deg2step(self, addr, deg):
         """Convert degrees to steps using queried scale factor."""
+        addr = self.parseaddr(addr)
         return int(deg * self.info[addr]["pulses"]/360)
 
     def step2deg(self, addr, step):
         """Convert steps to degrees using queried scale factor."""
+        addr = self.parseaddr(addr)
         return step * 360 / self.info[addr]["pulses"]
 
     def mm2step(self, addr, mm):
         """Convert mm to steps using queried scale factor."""
+        addr = self.parseaddr(addr)
         return int(mm * self.info[addr]["pulses"])
 
     def idx2step(self, addr, idx):
@@ -494,6 +512,7 @@ class Elliptec:
         TODO: If you use an ELL12 and can confirm this works (or not),
         please email the maintainer.
         """
+        addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["indexed"]:
             if self.info[addr]["partnumber"] in [6, 9]:
                 return int(idx * 32)
@@ -506,7 +525,11 @@ class Elliptec:
 
     def step2mm(self, addr, step):
         """Convert steps to mm using queried scale factor."""
-        return step / self.info[addr]["pulses"]
+        addr = self.parseaddr(addr)
+        if self.info[addr]["partnumber"] not in modtype["indexed"]:
+            return step / self.info[addr]["pulses"]
+        else:
+            return step
 
     @staticmethod
     def hex2step(x):
@@ -532,6 +555,7 @@ class Elliptec:
 
     def _moveabsolute(self, addr, pos):
         """Move motor to specified absolute position (dumb version)."""
+        addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["rotary"]:
             step = self.deg2step(addr, pos)
         elif self.info[addr]["partnumber"] in modtype["linear"]:
@@ -545,7 +569,11 @@ class Elliptec:
 
     def moveabsolute(self, addr, pos, depth=1):
         """Move motor to specified absolute position."""
+        addr = self.parseaddr(addr)
         ret = self._moveabsolute(addr, pos)
+        # Indexed mounts only report status for position 0
+        if self.info[addr]["partnumber"] in modtype["indexed"]:
+            return ret
         # Check if we should give up
         if depth > 5:
             errstr = "Moveabsolute unsuccessful after 5 tries:\n"
@@ -581,6 +609,7 @@ class Elliptec:
 
     def moverelative(self, addr, delta):
         """Move motor relative to current position."""
+        addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["rotary"]:
             step = self.deg2step(addr, delta)
         elif self.info[addr]["partnumber"] in modtype["linear"]:
@@ -608,6 +637,7 @@ class Elliptec:
             raise TypeError("Too many arguments")
         try:
             for addr, x in zip(addrs, xs):
+                addr = self.parseaddr(addr)
                 self.zero[addr] = x
         except TypeError:
             self.zero[addrs] = xs
@@ -626,27 +656,31 @@ class Elliptec:
             xs = args[1]
         else:
             raise TypeError("Too many arguments")
-        try:
+        if type(xs) is list:
             ret = []
             for addr, x in zip(addrs, xs):
+                addr = self.parseaddr(addr)
                 if self.info[addr]["partnumber"] in modtype["rotary"]:
                     y = (self.zero[addr] + x) % 360
                 else:
                     y = self.zero[addr] + x
                 ret.append(self.moveabsolute(addr, y))
             return ret
-        except TypeError:
+        else:
+            x = xs
+            addr = addrs[0]
             if self.info[addr]["partnumber"] in modtype["rotary"]:
                 y = (self.zero[addr] + x) % 360
             else:
                 y = self.zero[addr] + x
-            self.moveabsolute(addrs, y)
+            self.moveabsolute(addr, y)
 
     def indexmove(self, addr, idx):
         """Move to the specified index for shutter devices.
      
         Note that while these commands use 
         """
+        addr = self.parseaddr(addr)
         if self.info[addr]["partnumber"] in modtype["indexed"]:
             if self.info[addr]["partnumber"] == 6:
                 if idx in [0, 1]:
