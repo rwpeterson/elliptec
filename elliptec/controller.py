@@ -294,7 +294,7 @@ class Elliptec:
         """Convert status retval for comparison to status constants."""
         return int(retval[3:5], 16)
 
-    def changeaddress(self, addr, naddr):
+    def _changeaddress(self, addr, naddr):
         """Change address of module at addr to naddr.
 
         Expected reply: GS00 from new address.
@@ -307,6 +307,15 @@ class Elliptec:
         Required for persistent custom frequencies or addresses.
         """
         return self.handler(self.msg(addr, 'us'))
+
+    def changeaddress(self, addr, naddr):
+        """Persistently change address of module at addr to newaddr.
+
+        This combines _changeaddress and saveuserdata into a single call,
+        as it's easy to forget to call saveuserdata after
+        """
+        self.changeaddress(addr, naddr)
+        self.saveuserdata(naddr)
 
     def groupaddress(self, addr, gaddr):
         """Instruct module at `addr` to respond to `gaddr`.
