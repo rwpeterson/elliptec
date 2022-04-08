@@ -71,7 +71,4 @@ but we have not found them necessary in practical use.
 ## Contributions
 
 Patches and comments are welcome, especially if you have another model
-not listed above.
-
-Please check that contributions are `flake8`-clean. From the project
-directory, simply type `make lint` to check the appropriate files.
+not listed above (even if it is just to confirm everything works).
