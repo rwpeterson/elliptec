@@ -64,8 +64,9 @@ usual into your local repo.
 ## Scope
 
 Contributors currently have only used this to control the ELL14
-rotation mount and ELL17 linear stage. Not all commands are currently
-implemented.
+rotation mount, ELL17 and ELL20 linear stages, and the ELL6
+indexed filter stage. Not all commands are currently implemented
+but we have not found them necessary in practical use.
 
 ## Contributions
 

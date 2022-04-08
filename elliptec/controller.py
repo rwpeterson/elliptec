@@ -55,7 +55,7 @@ MMERR = 0.05
 # Device ids by module type
 modtype = {"linear": [7, 10, 17, 20],
            "rotary": [8, 14, 18],
-           "indexed": [6, 9],
+           "indexed": [6, 9, 12],
            "optclean": [14, 17, 18, 20]}
 # Linear plus rotary stages have same home cmd, same number of motors
 modtype["linrot"] = modtype["linear"] + modtype["rotary"]
@@ -118,7 +118,8 @@ class Elliptec:
         self.ser.timeout = 6
         # Sorting fixes a bug where some misbehaving modules do not reply to
         # the information query during initialization.
-        self.addrs = addrs.sorted()
+        self.addrs = addrs
+        self.addrs.sort()
         for addr in addrs:
             info = self.information(addr)
             if not info:
@@ -223,7 +224,7 @@ class Elliptec:
                      MSB is thread (1 imperial/0 metric)
                      rest is 7-bit hardware release
             TRAVEL - travel in mm/deg
-            PULSES - pulses per position (bi-positional only)
+            PULSES - pulses per measurement unit
         """
         return self.handler(self.msg(addr, 'in'))
 
@@ -435,12 +436,16 @@ class Elliptec:
         """Move motor to home position.
 
         For rotary stages, byte 3 sets direction: 0 CW and 1 CCW.
+        For indexed stages, move to 0th position
         """
         if self.info[addr]["partnumber"] in modtype["linrot"]:
             if direction == CW:
                 return self.handler(self.msg(addr, 'ho0'))
             else:
                 return self.handler(self.msg(addr, 'ho1'))
+        elif self.info[addr]["partnumber"] in modtype["indexed"]:
+            # These do not obey home
+            return self.indexmove(addr, 0)
         else:
             return self.handler(self.msg(addr, 'ho'))
 
@@ -460,6 +465,44 @@ class Elliptec:
     def mm2step(self, addr, mm):
         """Convert mm to steps using queried scale factor."""
         return int(mm * self.info[addr]["pulses"])
+
+    def idx2step(self, addr, idx):
+        """Convert index to steps using ad-hoc index protocol.
+        
+        The indexed shutter mounts have a pulses/M.U. of 0,
+        and are instead moved with a raw moveabsolute call
+        where the pulses are interpreted as millimeters,
+        and the device rounds them to a valid position
+        via its own map (here the ELL9):
+
+        | Range | Response    |
+        |-------|-------------|
+        | 00-1E | Index 0     |
+        | 1F-3D | Index 1     |
+        | 3E-5C | Index 2     |
+        | 5D-7B | Index 3     |
+        | 7C+   | Out of range|
+
+        The ELLO vendor GUI program sends idx * 0x20, nominally
+        32 mm. The CAD drawing indicates the filter pitch as 31 mm,
+        which you will note is 1F: idx * 0x1F also works, but below
+        that the motor will never round up to a closer index position.
+
+        For the ELL12, we infer the 19 mm pitch is rounded to 20
+        for these purposes.
+
+        TODO: If you use an ELL12 and can confirm this works (or not),
+        please email the maintainer.
+        """
+        if self.info[addr]["partnumber"] in modtype["indexed"]:
+            if self.info[addr]["partnumber"] in [6, 9]:
+                return int(idx * 32)
+            elif self.info[addr]["partnumber"] in [12]:
+                return int(idx * 20)
+            else:
+                return
+        else:
+            return
 
     def step2mm(self, addr, step):
         """Convert steps to mm using queried scale factor."""
@@ -493,6 +536,8 @@ class Elliptec:
             step = self.deg2step(addr, pos)
         elif self.info[addr]["partnumber"] in modtype["linear"]:
             step = self.mm2step(addr, pos)
+        elif self.info[addr]["partnumber"] in modtype["indexed"]:
+            step = self.idx2step(addr, pos)
         else:
             raise ModuleError
         hstep = self.step2hex(step)
@@ -596,6 +641,31 @@ class Elliptec:
             else:
                 y = self.zero[addr] + x
             self.moveabsolute(addrs, y)
+
+    def indexmove(self, addr, idx):
+        """Move to the specified index for shutter devices.
+     
+        Note that while these commands use 
+        """
+        if self.info[addr]["partnumber"] in modtype["indexed"]:
+            if self.info[addr]["partnumber"] == 6:
+                if idx in [0, 1]:
+                    self._moveabsolute(addr, idx)
+                else:
+                    raise ModuleError(f"Index {idx} out of bounds for ELL{self.info[addr]['partnumber']} at address {addr}")
+            if self.info[addr]["partnumber"] == 9:
+                if idx in [0, 1, 2, 3]:
+                    self._moveabsolute(addr, idx)
+                else:
+                    raise ModuleError(f"Index {idx} out of bounds for ELL{self.info[addr]['partnumber']} at address {addr}")
+            if self.info[addr]["partnumber"] == 12:
+                if idx in [0, 1, 2, 3, 4, 5]:
+                    # NOTICE: 
+                    self._moveabsolute(addr, idx)
+                else:
+                    raise ModuleError(f"Index {idx} out of bounds for ELL{self.info[addr]['partnumber']} at address {addr}")
+        else:
+            raise ModuleError("Not an indexed mount")
 
 
 class Dummyio():
