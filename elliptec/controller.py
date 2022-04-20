@@ -334,7 +334,7 @@ class Elliptec:
         This combines _changeaddress and saveuserdata into a single call,
         as it's easy to forget to call saveuserdata after
         """
-        self.changeaddress(addr, naddr)
+        self._changeaddress(addr, naddr)
         self.saveuserdata(naddr)
 
     def groupaddress(self, addr, gaddr):
